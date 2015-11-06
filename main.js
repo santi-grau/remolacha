@@ -30,7 +30,11 @@ browserify.settings({ transform: [stringify(['.svg', '.glsl'])]});
 app.set('views', __dirname + '/app/views');
 app.use('/js', browserify('./app/js'));
 app.set('view engine', 'jade');
-app.use('/*.css', function(req, res){  res.set('Content-Type', 'text/css').send( stylus.render( fs.readFileSync(__dirname + '/app/css/main.styl', 'utf-8') )); });
+app.use('/*.css', function(req, res){
+	var reqUrl = req.originalUrl.split('/');
+	var file = reqUrl[reqUrl.length-1].slice(0, -4);
+	res.set('Content-Type', 'text/css').send( stylus.render( fs.readFileSync(__dirname + '/app/css/' + file + '.styl', 'utf-8') )); 
+});
 
 app.use(express.static(__dirname + '/app'));
 // ┌────────────────────────────────────────────────────────────────────┐
