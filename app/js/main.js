@@ -8,7 +8,9 @@ var SimplexNoise = require('simplex-noise');
 
 var App = function() {
 
-	this.segmentsPerCircle = 64;
+ 	this.segmentsPerCircle = 64;
+ 	this.variation = 10;
+ 	this.speed = 0.01;
 	var totalCircles = 400;
 	var circlesRadius = 0.035;
 	var circlesDistance = 0.34;
@@ -28,49 +30,71 @@ var App = function() {
 	this.simplex = new SimplexNoise( Math.random );
 	this.simplex2 = new SimplexNoise( Math.random );
 
-	this.circle = new THREE.Object3D();
-	this.circle2 = new THREE.Object3D();
-
-
 	var position = [];
+	var ps = [];
+	var ids = [];
+	var iids = [];
 	var prePos = [];
 	var zeroPos = [];
+	var pos1 = [];
 
 	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
-		// var geometry = new THREE.SphereBufferGeometry( 1 );
-		// var material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
-		// var sphere = new THREE.Mesh( geometry, material );
 		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
-		var n = this.simplex.noise2D( pos[0], pos[1] ) * 10;
-		// sphere.position.set( pos[0] * ( radius + n ) - 100 , pos[1] * ( radius + n ), 0 );
-		// this.circle.add( sphere );
+		var n = this.simplex.noise2D( pos[0], pos[1] ) * this.variation;
 
-		if( i > 0 ){
-			position.push( prePos[0], prePos[1], 0 );
-			position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-		}
-		
-		if( i == this.segmentsPerCircle - 1 ) {
-			position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-			position.push( zeroPos[0], zeroPos[1], 0 );
-		}
-
+		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
+		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
 		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
 		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+
+		ps.push( -100, -100 );
+
+		ids.push( 0, 0 );
+		iids.push( i * 2 , i * 2 + 1 )
 	}
 
-	this.scene.add( this.circle );
-	this.scene.add( this.circle2 );
+	console.log(iids);
+
+	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
+		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
+		var n = 0;
+
+		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
+		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
+		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+
+		ps.push( 0, 0 );
+		ids.push( 1, 1 );
+		iids.push( i * 2 , i * 2 + 1 )
+	}
+
+	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
+		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
+		var n = this.simplex2.noise2D( pos[0], pos[1] ) * this.variation;
+
+		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
+		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
+		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+
+		ps.push( 100, 100 );
+		ids.push( 2, 2 );
+		iids.push( i * 2 , i * 2 + 1 )
+	}
 
 	var geometry = new THREE.BufferGeometry();
 
 	geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( position ), 3 ) );
+	geometry.addAttribute( 'ps', new THREE.BufferAttribute( new Float32Array( ps ), 1 ) );
+	geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( ids ), 1 ) );
+	geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( iids ), 1 ) );
 
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
 			time: { value: 1.0 },
-			center1 : { value: new THREE.Vector3( 0.0, 0.0, 0.0 ) },
-			resolution: { value: new THREE.Vector2() }
+			pos1 : { value : position.slice().splice( 0 , this.segmentsPerCircle * 6 ) },
+			pos2 : { value : position.slice().splice( -this.segmentsPerCircle * 6, this.segmentsPerCircle * 6 ) }
 		},
 		vertexShader: lineVs,
 		fragmentShader: lineFs
@@ -99,7 +123,7 @@ App.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
 	this.renderer.render( this.scene, this.camera );
 
-	this.timeStep += 0.01;
+	this.timeStep += this.speed;
 
 	var radius = 50;
 
@@ -108,31 +132,36 @@ App.prototype.step = function( time ) {
 	var zeroPos = [];
 
 	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
-
 		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
-
-		var n = this.simplex.noise2D( Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) + this.timeStep , Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ) * 10;
-		// this.circle.children[i].position.set( pos[0] * ( radius + n ) - 100 , pos[1] * ( radius + n ), 0 );
-
-		if( i > 0 ){
-			position.push( prePos[0], prePos[1], 0 );
-			position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-		}
-		
-		if( i == this.segmentsPerCircle - 1 ) {
-			position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-			position.push( zeroPos[0], zeroPos[1], 0 );
-		}
-
+		var n = this.simplex.noise2D( Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) + this.timeStep , Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ) * this.variation;
+		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
+		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
 		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
 		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-
 	}
 
-	for( var i = 0 ; i < position.length ; i++ ) this.mesh.geometry.attributes.position.array[i] = position[i];
-	
+	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
+		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
+		var n = 0;
+		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
+		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
+		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+	}
 
-	// this.mesh.geometry.attributes.position.array = position;
+	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
+		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
+		var n = this.simplex2.noise2D( Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) + this.timeStep , Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ) * this.variation;
+		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
+		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
+		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+	}
+
+	this.mesh.material.uniforms.pos1.value = position.slice().splice( 0 , this.segmentsPerCircle * 6 );
+	this.mesh.material.uniforms.pos2.value = position.slice().splice( -this.segmentsPerCircle * 6, this.segmentsPerCircle * 6 );
+
+	for( var i = 0 ; i < position.length ; i++ ) this.mesh.geometry.attributes.position.array[i] = position[i];
 	this.mesh.geometry.attributes.position.needsUpdate = true;
 };
 
