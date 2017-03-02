@@ -8,7 +8,7 @@ var SimplexNoise = require('simplex-noise');
 
 var App = function() {
 
-	var segmentsPerCircle = 16;
+	this.segmentsPerCircle = 64;
 	var totalCircles = 400;
 	var circlesRadius = 0.035;
 	var circlesDistance = 0.34;
@@ -36,24 +36,27 @@ var App = function() {
 	var prePos = [];
 	var zeroPos = [];
 
-	for( var i = 0 ; i < segmentsPerCircle ; i++ ){
-		var geometry = new THREE.SphereBufferGeometry( 1 );
-		var material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
-		var sphere = new THREE.Mesh( geometry, material );
-		var pos = [ Math.cos( Math.PI * 2 * i / ( segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( segmentsPerCircle ) ) ]
-		var n = this.simplex.noise2D( pos[0], pos[1] ) * 3;
-		sphere.position.set( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-		this.circle.add( sphere );
+	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
+		// var geometry = new THREE.SphereBufferGeometry( 1 );
+		// var material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+		// var sphere = new THREE.Mesh( geometry, material );
+		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
+		var n = this.simplex.noise2D( pos[0], pos[1] ) * 10;
+		// sphere.position.set( pos[0] * ( radius + n ) - 100 , pos[1] * ( radius + n ), 0 );
+		// this.circle.add( sphere );
 
-		if( i > 1 ) position.push( prePos[0], prePos[1], 0 );
+		if( i > 0 ){
+			position.push( prePos[0], prePos[1], 0 );
+			position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
+		}
 		
-		
-		position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-			
+		if( i == this.segmentsPerCircle - 1 ) {
+			position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
+			position.push( zeroPos[0], zeroPos[1], 0 );
+		}
 
 		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
 		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-		if( i == segmentsPerCircle - 1 )  position.push( zeroPos[0], zeroPos[1], 0 );
 	}
 
 	this.scene.add( this.circle );
@@ -66,15 +69,16 @@ var App = function() {
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
 			time: { value: 1.0 },
+			center1 : { value: new THREE.Vector3( 0.0, 0.0, 0.0 ) },
 			resolution: { value: new THREE.Vector2() }
 		},
 		vertexShader: lineVs,
 		fragmentShader: lineFs
 	} );
 
-	var mesh = new THREE.LineSegments( geometry, material );
+	this.mesh = new THREE.LineSegments( geometry, material );
 
-	this.scene.add( mesh )
+	this.scene.add( this.mesh );
 
 	window.onresize = this.onResize.bind( this );
 
@@ -98,10 +102,38 @@ App.prototype.step = function( time ) {
 	this.timeStep += 0.01;
 
 	var radius = 50;
-	for( var i = 0 ; i < this.circle.children.length ; i++ ){
-		// var n = this.simplex.noise2D( Math.cos( Math.PI * 2 * i / ( this.circle.children.length ) ) + this.timeStep , Math.sin( Math.PI * 2 * i / ( this.circle.children.length ) ) ) * 3;
-		// this.circle.children[i].position.set( Math.cos( Math.PI * 2 * i / ( this.circle.children.length ) ) * ( radius + n ), Math.sin( Math.PI * 2 * i / ( this.circle.children.length ) ) * ( radius + n ), 0 );
+
+	var position = [];
+	var prePos = [];
+	var zeroPos = [];
+
+	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
+
+		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
+
+		var n = this.simplex.noise2D( Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) + this.timeStep , Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ) * 10;
+		// this.circle.children[i].position.set( pos[0] * ( radius + n ) - 100 , pos[1] * ( radius + n ), 0 );
+
+		if( i > 0 ){
+			position.push( prePos[0], prePos[1], 0 );
+			position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
+		}
+		
+		if( i == this.segmentsPerCircle - 1 ) {
+			position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
+			position.push( zeroPos[0], zeroPos[1], 0 );
+		}
+
+		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+
 	}
+
+	for( var i = 0 ; i < position.length ; i++ ) this.mesh.geometry.attributes.position.array[i] = position[i];
+	
+
+	// this.mesh.geometry.attributes.position.array = position;
+	this.mesh.geometry.attributes.position.needsUpdate = true;
 };
 
 var app = new App();
