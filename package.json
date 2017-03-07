@@ -12,9 +12,11 @@
   "dependencies": {
     "browserify": "*",
     "browserify-middleware": "*",
+    "dat.gui": "^0.6.1",
     "express": "*",
     "figlet": "*",
     "jade": "*",
+    "matter-js": "^0.12.0",
     "nib": "*",
     "simplex-noise": "^2.3.0",
     "stringify": "*",

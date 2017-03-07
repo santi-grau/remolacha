@@ -1,21 +1,19 @@
-var lineVs = require('./../shaders/lineVs.glsl');
-var lineFs = require('./../shaders/lineFs.glsl');
-
 window.THREE = require('three');
 var OrbitControls = require('three-orbit-controls')(THREE);
 
-var SimplexNoise = require('simplex-noise');
+var Ring = require('./views/ring');
+
+var Matter = require('matter-js');
+
+var Engine = Matter.Engine;
+var Render = Matter.Render;
+var World = Matter.World;
+var Bodies = Matter.Bodies;
 
 var App = function() {
 
- 	this.segmentsPerCircle = 64;
- 	this.variation = 10;
- 	this.speed = 0.01;
-	var totalCircles = 400;
-	var circlesRadius = 0.035;
-	var circlesDistance = 0.34;
-
-	this.timeStep = 0;
+	this.rings = [];
+	this.rings.push( new Ring() );
 
 	this.containerEl = document.getElementById('main');
 	
@@ -25,86 +23,54 @@ var App = function() {
 	this.scene = new THREE.Scene();
 	this.camera = new THREE.PerspectiveCamera( 60, this.containerEl.offsetWidth / this.containerEl.offsetHeight, .1, 10000 );
 
-	var radius = 50;
+	this.scene.add( this.rings[0].mesh );
 
-	this.simplex = new SimplexNoise( Math.random );
-	this.simplex2 = new SimplexNoise( Math.random );
+	// matter
+	var engine = Engine.create();
+	engine.world.gravity.y = 0;
 
-	var position = [];
-	var ps = [];
-	var ids = [];
-	var iids = [];
-	var prePos = [];
-	var zeroPos = [];
-	var pos1 = [];
+	console.log(engine)
+	var render = Render.create({
+		element: document.getElementById('renderer'),
+		engine: engine,
+		options : {
+			background : '#ffffff',
+			wireframeBackground : "#000000",
+			showCollisions : true,
+			pixelRatio : 2,
+			width : this.containerEl.offsetWidth,
+			height : this.containerEl.offsetHeight
+		}
+	});
+	console.log(render);
 
-	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
-		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
-		var n = this.simplex.noise2D( pos[0], pos[1] ) * this.variation;
+	this.totalParticles = 100;
 
-		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
-		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
+	this.stack = Matter.Composite.create();
+	this.fixed = Matter.Composite.create();
 
-		ps.push( -100, -100 );
+	var group;
+	for (var i = 0; i < this.totalParticles; i++) {
+		Matter.Composite.add( this.fixed, Matter.Bodies.circle( this.containerEl.offsetWidth * i / this.totalParticles, this.containerEl.offsetHeight / 2, .1, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: group}}));
+		Matter.Composite.add( this.stack, Matter.Bodies.circle( this.containerEl.offsetWidth * i / this.totalParticles, this.containerEl.offsetHeight / 2, .1, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: group+1}}));
+		group+=2;
+	};
 
-		ids.push( 0, 0 );
-		iids.push( i * 2 , i * 2 + 1 )
+	for ( var i = 0; i < this.totalParticles; i ++ ) {
+		Matter.World.add(engine.world, Matter.Constraint.create({bodyA: this.fixed.bodies[i], pointA: { x: 0, y: 0 }, bodyB: this.stack.bodies[i], pointB: { x: 0, y: 0 }, stiffness: .1, render: { strokeWidth : .01, strokeStyle:'#00ffff'}}));
+		Matter.Body.setStatic(this.fixed.bodies[i], true );
 	}
 
-	console.log(iids);
+	World.add( engine.world, [ this.stack ] );
 
-	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
-		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
-		var n = 0;
+	this.mouse = 0;
 
-		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
-		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-
-		ps.push( 0, 0 );
-		ids.push( 1, 1 );
-		iids.push( i * 2 , i * 2 + 1 )
-	}
-
-	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
-		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
-		var n = this.simplex2.noise2D( pos[0], pos[1] ) * this.variation;
-
-		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
-		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-
-		ps.push( 100, 100 );
-		ids.push( 2, 2 );
-		iids.push( i * 2 , i * 2 + 1 )
-	}
-
-	var geometry = new THREE.BufferGeometry();
-
-	geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( position ), 3 ) );
-	geometry.addAttribute( 'ps', new THREE.BufferAttribute( new Float32Array( ps ), 1 ) );
-	geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( ids ), 1 ) );
-	geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( iids ), 1 ) );
-
-	var material = new THREE.ShaderMaterial( {
-		uniforms: {
-			time: { value: 1.0 },
-			pos1 : { value : position.slice().splice( 0 , this.segmentsPerCircle * 6 ) },
-			pos2 : { value : position.slice().splice( -this.segmentsPerCircle * 6, this.segmentsPerCircle * 6 ) }
-		},
-		vertexShader: lineVs,
-		fragmentShader: lineFs
-	} );
-
-	this.mesh = new THREE.LineSegments( geometry, material );
-
-	this.scene.add( this.mesh );
+	Engine.run(engine);
+	Render.run(render);
 
 	window.onresize = this.onResize.bind( this );
+
+	this.containerEl.addEventListener("mousemove", this.mouseMove.bind(this) );
 
 	this.onResize();
 
@@ -119,50 +85,20 @@ App.prototype.onResize = function(e) {
 	this.camera.updateProjectionMatrix();
 }
 
+App.prototype.mouseMove = function(e) {
+	this.mouse = ( e.offsetX - this.containerEl.offsetWidth / 2) / this.containerEl.offsetWidth + 0.5;
+};
+
 App.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
+	var range = 0.5;
+	for( var i = 0 ; i < this.totalParticles; i++ ){
+		var val = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.mouse) / range ) );
+		Matter.Body.applyForce( this.stack.bodies[ i ], this.stack.bodies[ i ].position, { x : 0 , y: -( Math.sin( val * Math.PI ) * 0.001) / 2 } );
+	}
+
+	this.rings[0].step( time );
 	this.renderer.render( this.scene, this.camera );
-
-	this.timeStep += this.speed;
-
-	var radius = 50;
-
-	var position = [];
-	var prePos = [];
-	var zeroPos = [];
-
-	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
-		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
-		var n = this.simplex.noise2D( Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) + this.timeStep , Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ) * this.variation;
-		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
-		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-	}
-
-	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
-		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
-		var n = 0;
-		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
-		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-	}
-
-	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
-		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
-		var n = this.simplex2.noise2D( Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) + this.timeStep , Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ) * this.variation;
-		if( i > 0 ) position.push( prePos[0], prePos[1], 0, pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0 );
-		if( i == this.segmentsPerCircle - 1 ) position.push( pos[0] * ( radius + n ), pos[1] * ( radius + n ), 0, zeroPos[0], zeroPos[1], 0 );
-		prePos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-		if( i == 0 ) zeroPos = [ pos[0] * ( radius + n ), pos[1] * ( radius + n ) ];
-	}
-
-	this.mesh.material.uniforms.pos1.value = position.slice().splice( 0 , this.segmentsPerCircle * 6 );
-	this.mesh.material.uniforms.pos2.value = position.slice().splice( -this.segmentsPerCircle * 6, this.segmentsPerCircle * 6 );
-
-	for( var i = 0 ; i < position.length ; i++ ) this.mesh.geometry.attributes.position.array[i] = position[i];
-	this.mesh.geometry.attributes.position.needsUpdate = true;
 };
 
 var app = new App();
