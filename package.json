@@ -1,6 +1,10 @@
 {
   "name": "Remolacha",
   "version": "1.0.0",
+  "repository" : {
+    "type" : "git",
+    "url" : "https://github.com/santi-grau/remolacha"
+  },
   "description": "La re mo la cha cha cha",
   "main": "main.js",
   "scripts": {
@@ -13,7 +17,7 @@
   "dependencies": {
     "browserify": "*",
     "browserify-middleware": "*",
-    "dat.gui": "^0.6.1",
+    "dat-gui": "^0.5.0",
     "express": "*",
     "figlet": "*",
     "jade": "*",
