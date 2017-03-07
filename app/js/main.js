@@ -5,6 +5,8 @@ var Ring = require('./views/ring');
 
 var Matter = require('matter-js');
 
+// var Dat = require('dat.gui');
+
 var Engine = Matter.Engine;
 var Render = Matter.Render;
 var World = Matter.World;
