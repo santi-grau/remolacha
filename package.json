@@ -4,7 +4,8 @@
   "description": "La re mo la cha cha cha",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "grunt build && mkdir -p docs/js && ./node_modules/browserify/bin/cmd.js  -t [ stringify --extensions [.obj .svg .glsl] ]  app/js/main.js > docs/js/main.js"
   },
   "keywords": [],
   "author": "lct",
@@ -24,7 +25,14 @@
     "three": "^0.84.0",
     "three-orbit-controls": "^82.1.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-browserify": "^5.0.0",
+    "grunt-contrib-clean": "^1.0.0",
+    "grunt-contrib-copy": "^1.0.0",
+    "grunt-contrib-jade": "^1.0.0",
+    "grunt-contrib-stylus": "^1.2.0"
+  },
   "engines": {
     "node": "0.10.x"
   }
