@@ -195,7 +195,7 @@ var Ring = function( parent ){
 			}
 
 			position.push( pos[0] * ( this.radius ), pos[1] * ( this.radius ), 0 );
-			color.push(1,0,0,1);
+			color.push(1,1,1,1);
 			ps.push( pt );
 			ids.push( j );
 			iids.push( i + 1 );
@@ -212,7 +212,7 @@ var Ring = function( parent ){
 
 			if( i == this.segmentsPerCircle - 1 ){
 				position.push( zeroPos[0], zeroPos[1], zeroPos[2] );
-				color.push(1,0,0,1);
+				color.push(1,1,1,1);
 				ps.push( pt );
 				ids.push( j );
 				iids.push( i + 2 );
@@ -226,7 +226,7 @@ var Ring = function( parent ){
 				}
 			
 				position.push( zeroPos[0], zeroPos[1], zeroPos[2] );
-				color.push(1,0,0,0);
+				color.push(1,1,1,0);
 				ps.push( pt );
 				ids.push( j );
 				iids.push( i + 3 );
