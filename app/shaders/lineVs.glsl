@@ -56,7 +56,7 @@ void main() {
 	float idFloat = ids / totalCircles * 64.0;
 	float springStrength = springVerts[int(idFloat)];
 
-	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 + 30.0 * springStrength ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 + 30.0 * springStrength  ), 0.0 );
+	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 ), 0.0 );
 
 	fPos = interpolate + translate;
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );
