@@ -9,6 +9,8 @@ Should be ready on port 5000
 
 ### TODO
 
-1. Multiple generators
-2. Springs should loop
-3. Position to springs
+1. Multiple generators - OK
+2. Ring amount selector - OK
+3. Springs should loop - OK
+4. Position to springs
+5. Dat.gui - OK

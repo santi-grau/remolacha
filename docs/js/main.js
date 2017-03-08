@@ -1,48 +1,21 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 window.THREE = require('three');
 var OrbitControls = require('three-orbit-controls')(THREE);
-
-var Ring = require('./views/ring');
-
 var Matter = require('matter-js');
 
-var Dat = require('dat-gui');
+var EventEmitter = require('events').EventEmitter;
 
-var Engine = Matter.Engine;
-var Render = Matter.Render;
-var World = Matter.World;
-var Bodies = Matter.Bodies;
+var Ring = require('./views/ring');
+var Data = require('./views/data');
 
 var App = function() {
 
-	var Params = function() {
-		this.generators = 3;
-		this.temp = 12;
-		this.soil = 60;
-		this.air = 30;
-		this.water = 0.50;
-		this.light = 0.50;
-		this.substrate = 0.5;
-		this.music = 0.5;
-		this.audio = false;
-	};
+	this.emitter = new EventEmitter();
 
-	var text = new Params();
-	var gui = new Dat.GUI();
-	gui.add(text, 'generators', [ 2, 3, 4, 5, 6, 7, 8 ] );
-	gui.add(text, 'temp', -5, 35 );
-	gui.add(text, 'soil', 0, 100 );
-	gui.add(text, 'air', 0, 100 );
-	gui.add(text, 'water', 0, 1 );
-	gui.add(text, 'light', 0, 1 );
-	gui.add(text, 'water', 0, 1 );
-	gui.add(text, 'substrate', 0, 1 );
-	gui.add(text, 'audio');
-	
-
+	this.data = new Data( this );
 
 	this.rings = [];
-	this.rings.push( new Ring() );
+	this.rings.push( new Ring( this ) );
 
 	this.containerEl = document.getElementById('main');
 	
@@ -55,11 +28,11 @@ var App = function() {
 	this.scene.add( this.rings[0].mesh );
 
 	// matter
-	var engine = Engine.create();
+	var engine = Matter.Engine.create();
 	engine.world.gravity.y = 0;
 
-	console.log(engine)
-	var render = Render.create({
+
+	var render = Matter.Render.create({
 		element: document.getElementById('renderer'),
 		engine: engine,
 		options : {
@@ -71,7 +44,6 @@ var App = function() {
 			height : this.containerEl.offsetHeight
 		}
 	});
-	console.log(render);
 
 	this.totalParticles = 100;
 
@@ -90,13 +62,13 @@ var App = function() {
 		Matter.Body.setStatic(this.fixed.bodies[i], true );
 	}
 
-	World.add( engine.world, [ this.stack ] );
+	Matter.World.add( engine.world, [ this.stack ] );
 
 	this.mouse = 0;
 	this.mouse2 = 0;
 
-	Engine.run(engine);
-	Render.run(render);
+	Matter.Engine.run(engine);
+	Matter.Render.run(render);
 
 	window.onresize = this.onResize.bind( this );
 
@@ -122,12 +94,14 @@ App.prototype.mouseMove = function(e) {
 App.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
 	var range = 0.5;
-	// if( this.mouse > 1 - range ) this.mouse2 = this.mouse - 1;x
+	if( this.mouse > 1 - range ) this.mouse2 = this.mouse - 1;
+	else if( this.mouse < range ) this.mouse2 = this.mouse + 1;
+	else this.mouse2 = 0;
 	for( var i = 0 ; i < this.totalParticles; i++ ){
 		var val = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.mouse) / range ) );
-		// var val2 = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.mouse2) / range ) );
+		var val2 = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.mouse2) / range ) );
 		Matter.Body.applyForce( this.stack.bodies[ i ], this.stack.bodies[ i ].position, { x : 0 , y: -( Math.sin( val * Math.PI ) * 0.001) / 2 } );
-		// Matter.Body.applyForce( this.stack.bodies[ i ], this.stack.bodies[ i ].position, { x : 0 , y: -( Math.sin( val2 * Math.PI ) * 0.001) / 2 } );
+		Matter.Body.applyForce( this.stack.bodies[ i ], this.stack.bodies[ i ].position, { x : 0 , y: -( Math.sin( val2 * Math.PI ) * 0.001) / 2 } );
 	}
 
 	this.rings[0].step( time );
@@ -135,7 +109,57 @@ App.prototype.step = function( time ) {
 };
 
 var app = new App();
-},{"./views/ring":2,"dat-gui":5,"matter-js":8,"three":11,"three-orbit-controls":10}],2:[function(require,module,exports){
+},{"./views/data":2,"./views/ring":3,"events":9,"matter-js":10,"three":13,"three-orbit-controls":12}],2:[function(require,module,exports){
+var Dat = require('dat-gui');
+
+var Data = function( parent ){
+	this.parent = parent;
+
+	var Params = function() {
+		this.temp = 12;
+		this.soil = 60;
+		this.air = 30;
+		this.water = 0.50;
+		this.light = 0.50;
+		this.substrate = 0.5;
+		this.audio = false;
+
+		this.show = false;
+		this.segments = 32;
+		this.rings = 256;
+		this.generators = 4;
+		this.idleIntensity = 0.5;
+	};
+
+	this.params = new Params();
+
+	var gui = new Dat.GUI();
+
+	var f1 = gui.addFolder('Main data');
+	f1.add( this.params, 'temp', -5, 35 ).onChange( function( value ){ this.parent.emitter.emit('temp', value ); }.bind(this) );
+	f1.add( this.params, 'soil', 0, 100 ).onChange( function( value ){ this.parent.emitter.emit('soil', value ); }.bind(this) );
+	f1.add( this.params, 'air', 0, 100 ).onChange( function( value ){ this.parent.emitter.emit('air', value ); }.bind(this) );
+	f1.add( this.params, 'water', 0, 1 ).onChange( function( value ){ this.parent.emitter.emit('water', value ); }.bind(this) );
+	f1.add( this.params, 'light', 0, 1 ).onChange( function( value ){ this.parent.emitter.emit('light', value ); }.bind(this) );
+	f1.add( this.params, 'substrate', 0, 1 ).onChange( function( value ){ this.parent.emitter.emit('substrate', value ); }.bind(this) );
+	f1.add( this.params, 'audio').onChange( function( value ){ this.parent.emitter.emit('audio', value ); }.bind(this) );
+
+	var f2 = gui.addFolder('Debug data');
+	
+	f2.add( this.params, 'show').onChange( function( value ){ this.parent.emitter.emit('show', value ); }.bind(this) );	
+	f2.add( this.params, 'segments', [ 4, 8, 16, 32, 64, 128 ] ).onChange( function( value ){ this.parent.emitter.emit('segments', value ); }.bind(this) );
+	f2.add( this.params, 'rings', [ 64, 128, 256, 512, 1024 ] ).onChange( function( value ){ this.parent.emitter.emit('rings', value ); }.bind(this) );
+	f2.add( this.params, 'generators', [ 2, 3, 4 ] ).onChange( function( value ){ this.parent.emitter.emit('generators', value ); }.bind(this) );
+	f2.add( this.params, 'idleIntensity', 0, 1 ).onChange( function( value ){ this.parent.emitter.emit('idleIntensity', value ); }.bind(this) );
+
+
+	f1.open();
+	f2.open();
+
+}
+
+module.exports = Data;
+},{"dat-gui":6}],3:[function(require,module,exports){
 var lineVs = require('./../../shaders/lineVs.glsl');
 var lineFs = require('./../../shaders/lineFs.glsl');
 
@@ -143,11 +167,9 @@ var SimplexNoise = require('simplex-noise');
 
 var Ring = function( parent ){
 	this.parent = parent;
-	this.segmentsPerCircle = 64;
- 	this.variation = 5;
- 	this.speed = 0.01;
-	this.totalCircles = 300;
 
+ 	this.speed = 0.01;
+	
 	var circlesRadius = 0.035;
 	var circlesDistance = 0.34;
 
@@ -155,114 +177,39 @@ var Ring = function( parent ){
 
 	this.radius = 50;
 
-	this.simplex = new SimplexNoise( Math.random );
-	this.simplex2 = new SimplexNoise( Math.random );
-	this.simplex3 = new SimplexNoise( Math.random );
+	this.generators = [];
+
+	for( var i = 0 ; i < 7 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
 
 	var position = [];
-	var color = [];
-	var ps = [];
 	var ids = [];
 	var iids = [];
-	var prePos = [];
-	var zeroPos = [];
-	this.pos1 = [];
-	this.pos2 = [];
 
-	for( var j = 0 ; j < this.totalCircles ; j++ ){
-
-		var pt = -300 + 600 * j / (this.totalCircles - 1);
-
-		for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
-			var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ]
-
-			if( i == 0 ){
-				position.push( pos[0] * ( this.radius ), pos[1] * ( this.radius ), 0 );
-				ps.push( pt );
-				color.push(1,0,0,0);
-				ids.push( j );
-				iids.push( i );
-
-				if( j == 0 ){
-					var n = this.simplex.noise2D( pos[0], pos[1] ) * this.variation;
-					this.pos1.push( pos[0] * ( this.radius + n ), pos[1] * ( this.radius + n ), 0 );
-				}
-
-				if( j == this.totalCircles - 1 ){
-					var n = this.simplex2.noise2D( pos[0], pos[1] ) * this.variation;
-					this.pos2.push( pos[0] * ( this.radius + n ), pos[1] * ( this.radius + n ), 0 );
-				}
-			}
-
-			position.push( pos[0] * ( this.radius ), pos[1] * ( this.radius ), 0 );
-			color.push(1,1,1,1);
-			ps.push( pt );
+	for( var j = 0 ; j < 1024 ; j++ ){
+		for( var i = 0 ; i < 128 + 3 ; i++ ){
+			position.push( 0, 0, 0 );
 			ids.push( j );
-			iids.push( i + 1 );
-
-			if( j == 0 ){
-				var n = this.simplex.noise2D( pos[0], pos[1] ) * this.variation;
-				this.pos1.push( pos[0] * ( this.radius + n ), pos[1] * ( this.radius + n ), 0 );
-			}
-
-			if( j == this.totalCircles - 1 ){
-				var n = this.simplex2.noise2D( pos[0], pos[1] ) * this.variation;
-				this.pos2.push( pos[0] * ( this.radius + n ), pos[1] * ( this.radius + n ), 0 );
-			}
-
-			if( i == this.segmentsPerCircle - 1 ){
-				position.push( zeroPos[0], zeroPos[1], zeroPos[2] );
-				color.push(1,1,1,1);
-				ps.push( pt );
-				ids.push( j );
-				iids.push( i + 2 );
-
-				if( j == 0 ){
-					this.pos1.push( zeroPos[0], zeroPos[1], 0 );
-				}
-
-				if( j == this.totalCircles - 1 ){
-					this.pos2.push( zeroPos[0], zeroPos[1], 0 );
-				}
-			
-				position.push( zeroPos[0], zeroPos[1], zeroPos[2] );
-				color.push(1,1,1,0);
-				ps.push( pt );
-				ids.push( j );
-				iids.push( i + 3 );
-
-				if( j == 0 ){
-					this.pos1.push( zeroPos[0], zeroPos[1], 0 );
-				}
-				if( j == this.totalCircles - 1 ){
-					this.pos2.push( zeroPos[0], zeroPos[1], 0 );
-				}
-			}
-
-			if( i == 0 ){
-				var n = 0;
-				if( j == 0 ) n = this.simplex.noise2D( pos[0], pos[1] ) * this.variation;
-				if( j == this.totalCircles - 1 ) n = this.simplex2.noise2D( pos[0], pos[1] ) * this.variation;
-				zeroPos = [ pos[0] * ( this.radius + n ), pos[1] * ( this.radius + n ), 0 ];
-			}
-
+			iids.push( i );
 		}
 	}
 
 	var geometry = new THREE.BufferGeometry();
 
 	geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( position ), 3 ) );
-	geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( color ), 4 ) );
-	geometry.addAttribute( 'ps', new THREE.BufferAttribute( new Float32Array( ps ), 1 ) );
+	geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( [] ), 4 ) );
 	geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( ids ), 1 ) );
 	geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( iids ), 1 ) );
 
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
-			time: { value: 1.0 },
-			pos1 : { value : this.pos1 },
-			pos2 : { value : this.pos2 },
-			totalCircles : { value : this.totalCircles }
+			time: { value : 1.0 },
+			gens : { value : [] },
+			pos0 : { value : [] },
+			pos1 : { value : [] },
+			pos2 : { value : [] },
+			pos3 : { value : [] },
+			totalGens : { value : this.parent.data.params.generators },
+			totalCircles : { value : this.parent.data.params.rings }
 		},
 		transparent : true,
 		vertexShader: lineVs,
@@ -271,52 +218,83 @@ var Ring = function( parent ){
 
 	this.mesh = new THREE.Line( geometry, material );
 
+	this.updateColors( this.parent.data.params.segments );
+
+	this.parent.emitter.on('rings', function( value ) {
+		this.updateColors( value );
+		this.mesh.material.uniforms.totalCircles.value = value;
+	}.bind(this));
+
+	this.parent.emitter.on('segments', function( value ) {
+		this.updateColors( value );
+	}.bind(this));
+
+}
+
+Ring.prototype.updateColors = function( ){
+	var color = [];
+
+	for( var j = 0 ; j < this.parent.data.params.rings; j++ ){
+		color.push(1,1,1,0);
+		for( var i = 0 ; i < this.parent.data.params.segments ; i++ ) color.push(1,1,1,1);
+		color.push(1,1,1,1,1,1,1,0);
+		for( var i = this.parent.data.params.segments ; i < 128 ; i++ ) color.push(1,1,1,0);
+	}
+	for( var j = this.parent.data.params.rings ; j < 1024; j++ ){
+		color.push(0,0,0,0);
+		for( var i = 0 ; i < this.parent.data.params.segments ; i++ ) color.push(0,0,0,0);
+		color.push(0,0,0,0,0,0,0,0);
+		for( var i = this.parent.data.params.segments ; i < 128 ; i++ ) color.push(0,0,0,0);
+	}
+	
+	this.mesh.geometry.attributes.color.array = new Float32Array( color );
+	this.mesh.geometry.attributes.color.needsUpdate = true;
 }
 
 Ring.prototype.step = function(time){
 	
 	this.timeStep += this.speed;
-	this.pos1 = [];
-	for( var i = 0 ; i < this.segmentsPerCircle ; i++ ){
-		
-		var pos = [ Math.cos( Math.PI * 2 * i / ( this.segmentsPerCircle ) ), Math.sin( Math.PI * 2 * i / ( this.segmentsPerCircle ) ) ];
-		
-		if( i == 0 ){
-			var n = this.simplex.noise2D( pos[0] + this.timeStep, pos[1] ) * this.variation;
-			this.pos1.push( pos[0] * ( this.radius + n ), pos[1] * ( this.radius + n ), 0 );
-		}
 
-		var n = this.simplex.noise2D( pos[0] + this.timeStep, pos[1] ) * this.variation;
-		this.pos1.push( pos[0] * ( this.radius + n ), pos[1] * ( this.radius + n ), 0 );
+	for( var j = 0 ; j < 4 ; j++ ){
+		var zeropos = [];
+		var pos = [];
+		for( var i = 0 ; i < this.parent.data.params.segments ; i++ ){
+			var p = [ Math.cos( Math.PI * 2 * i / ( this.parent.data.params.segments ) ), Math.sin( Math.PI * 2 * i / ( this.parent.data.params.segments ) ) ];
 
-		if( i == this.segmentsPerCircle - 1 ){
-			this.pos1.push( zeroPos[0], zeroPos[1], 0 );
-			this.pos1.push( zeroPos[0], zeroPos[1], 0 );
-		}
+			if( i == 0 ){
+				var n = this.generators[0].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.params.idleIntensity * this.radius / 5;
+				pos.push( p[0] * ( this.radius + n ), p[1] * ( this.radius + n ), 0 );
+			}
 
-		if( i == 0 ){
-			var n = this.simplex.noise2D( pos[0] + this.timeStep, pos[1] ) * this.variation;
-			zeroPos = [ pos[0] * ( this.radius + n ), pos[1] * ( this.radius + n ), 0 ];
+			var n = this.generators[0].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.params.idleIntensity * this.radius / 5;
+			pos.push( p[0] * ( this.radius + n ), p[1] * ( this.radius + n ), 0 );
+
+			if( i == this.parent.data.params.segments - 1 ){
+				pos.push( zeropos[0], zeropos[1], 0 );
+				pos.push( zeropos[0], zeropos[1], 0 );
+			}
+
+			if( i == 0 ){
+				var n = this.generators[0].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.params.idleIntensity * this.radius / 5;
+				zeropos = [ p[0] * ( this.radius + n ), p[1] * ( this.radius + n ), 0 ];
+			}
 		}
+		this.mesh.material.uniforms[ 'pos' + j ].value = pos;
 	}
-
-	this.mesh.material.uniforms.pos1.value = this.pos1;
-
 	this.mesh.geometry.attributes.position.needsUpdate = true;
-
 }
 
 module.exports = Ring;
-},{"./../../shaders/lineFs.glsl":3,"./../../shaders/lineVs.glsl":4,"simplex-noise":9}],3:[function(require,module,exports){
+},{"./../../shaders/lineFs.glsl":4,"./../../shaders/lineVs.glsl":5,"simplex-noise":11}],4:[function(require,module,exports){
 module.exports = "#ifdef GL_ES\n\tprecision highp float;\n#endif\n\nvarying vec4 vColor;\n\nvoid main( ){\n\tgl_FragColor = vColor;\n}";
 
-},{}],4:[function(require,module,exports){
-module.exports = "#ifdef GL_ES\n\tprecision highp float;\n#endif\n\n#define M_PI 3.1415926535897932384626433832795\n\nvarying vec4 vColor;\n\nuniform vec3 pos1[67];\nuniform vec3 pos2[67];\nuniform float totalCircles;\n\nattribute float ps;\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nvoid main() {\n\tvColor = color;\n\n\tvec3 ps2 = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles + vec3( cos( M_PI * ids / totalCircles ) * 300.0, sin( M_PI * ids / totalCircles ) * 300.0, 0.0 );\n\t\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( ps2, 1.0 );\n}";
-
 },{}],5:[function(require,module,exports){
+module.exports = "#ifdef GL_ES\n\tprecision highp float;\n#endif\n\n#define M_PI 3.1415926535897932384626433832795\n\nvarying vec4 vColor;\n\nuniform vec3 pos0[131];\nuniform vec3 pos1[131];\nuniform vec3 pos2[131];\nuniform vec3 pos3[131];\n\nuniform float totalCircles;\nuniform float totalGens;\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nvoid main() {\n\tvColor = color;\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\tif( totalGens == 2.0 ){\n\t\tif( ids < totalCircles / 2.0 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos0[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 3.0 ){\n\t\tif( ids < totalCircles / 3.3 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles / 3.3 && ids < totalCircles / 6.6 ) {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 4.0 ){\n\t\tif( ids < totalCircles * 0.25 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.25 && ids < totalCircles * 0.5 ) {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.5 && ids < totalCircles * 0.75 ) {\n\t\t\tinterpolate = pos2[ int( iids ) ] + ( pos3[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos3[ int( iids ) ] + ( pos0[ int( iids ) ] - pos3[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * 300.0, sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * 300.0, 0.0 );\n\n\tfPos = interpolate + translate;\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
+
+},{}],6:[function(require,module,exports){
 module.exports = require('./vendor/dat.gui')
 module.exports.color = require('./vendor/dat.color')
-},{"./vendor/dat.color":6,"./vendor/dat.gui":7}],6:[function(require,module,exports){
+},{"./vendor/dat.color":7,"./vendor/dat.gui":8}],7:[function(require,module,exports){
 /**
  * dat-gui JavaScript Controller Library
  * http://code.google.com/p/dat-gui
@@ -1072,7 +1050,7 @@ dat.color.math = (function () {
 })(),
 dat.color.toString,
 dat.utils.common);
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /**
  * dat-gui JavaScript Controller Library
  * http://code.google.com/p/dat-gui
@@ -4733,7 +4711,311 @@ dat.dom.CenteredDiv = (function (dom, common) {
 dat.utils.common),
 dat.dom.dom,
 dat.utils.common);
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+module.exports = EventEmitter;
+
+// Backwards-compat with node 0.10.x
+EventEmitter.EventEmitter = EventEmitter;
+
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!isNumber(n) || n < 0 || isNaN(n))
+    throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var er, handler, len, args, i, listeners;
+
+  if (!this._events)
+    this._events = {};
+
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events.error ||
+        (isObject(this._events.error) && !this._events.error.length)) {
+      er = arguments[1];
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      } else {
+        // At least give some kind of context to the user
+        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+        err.context = er;
+        throw err;
+      }
+    }
+  }
+
+  handler = this._events[type];
+
+  if (isUndefined(handler))
+    return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    args = Array.prototype.slice.call(arguments, 1);
+    listeners = handler.slice();
+    len = listeners.length;
+    for (i = 0; i < len; i++)
+      listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function(type, listener) {
+  var m;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events)
+    this._events = {};
+
+  // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+  if (this._events.newListener)
+    this.emit('newListener', type,
+              isFunction(listener.listener) ?
+              listener.listener : listener);
+
+  if (!this._events[type])
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  else if (isObject(this._events[type]))
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  else
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+
+  // Check for listener leak
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+
+  return this;
+};
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener = function(type, listener) {
+  var list, position, length, i;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events || !this._events[type])
+    return this;
+
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener ||
+      (isFunction(list.listener) && list.listener === listener)) {
+    delete this._events[type];
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener)) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0)
+      return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  var key, listeners;
+
+  if (!this._events)
+    return this;
+
+  // not listening for removeListener, no need to emit
+  if (!this._events.removeListener) {
+    if (arguments.length === 0)
+      this._events = {};
+    else if (this._events[type])
+      delete this._events[type];
+    return this;
+  }
+
+  // emit removeListener for all listeners on all events
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else if (listeners) {
+    // LIFO order
+    while (listeners.length)
+      this.removeListener(type, listeners[listeners.length - 1]);
+  }
+  delete this._events[type];
+
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  var ret;
+  if (!this._events || !this._events[type])
+    ret = [];
+  else if (isFunction(this._events[type]))
+    ret = [this._events[type]];
+  else
+    ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.prototype.listenerCount = function(type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+
+    if (isFunction(evlistener))
+      return 1;
+    else if (evlistener)
+      return evlistener.length;
+  }
+  return 0;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  return emitter.listenerCount(type);
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+
+},{}],10:[function(require,module,exports){
 (function (global){
 /**
 * matter-js 0.12.0 by @liabru 2017-02-02
@@ -14916,7 +15198,7 @@ var Vector = _dereq_('../geometry/Vector');
 },{"../body/Composite":2,"../core/Common":14,"../core/Events":16,"../geometry/Bounds":26,"../geometry/Vector":28}]},{},[30])(30)
 });
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],9:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /*
  * A fast javascript implementation of simplex noise by Jonas Wagner
  *
@@ -15334,7 +15616,7 @@ if (typeof module !== 'undefined') {
 
 })();
 
-},{}],10:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 module.exports = function( THREE ) {
 	/**
 	 * @author qiao / https://github.com/qiao
@@ -16356,7 +16638,7 @@ module.exports = function( THREE ) {
 	return OrbitControls;
 };
 
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
