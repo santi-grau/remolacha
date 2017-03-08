@@ -35,8 +35,8 @@ var App = function() {
 		element: document.getElementById('renderer'),
 		engine: engine,
 		options : {
-			background : '#ffffff',
-			wireframeBackground : "#000000",
+			background : '#ffffff00',
+			wireframeBackground : "#ffffff00",
 			showCollisions : true,
 			pixelRatio : 2,
 			width : this.containerEl.offsetWidth,
@@ -44,7 +44,7 @@ var App = function() {
 		}
 	});
 
-	this.totalParticles = 100;
+	this.totalParticles = 64;
 
 	this.stack = Matter.Composite.create();
 	this.fixed = Matter.Composite.create();
@@ -71,7 +71,9 @@ var App = function() {
 
 	window.onresize = this.onResize.bind( this );
 
-	this.containerEl.addEventListener("mousemove", this.mouseMove.bind(this) );
+	this.emitter.on('temp', function( value ) {
+		this.mouse = ( value + 5 ) / 40
+	}.bind(this));
 
 	this.onResize();
 

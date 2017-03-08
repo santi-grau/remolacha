@@ -36,8 +36,8 @@ var App = function() {
 		element: document.getElementById('renderer'),
 		engine: engine,
 		options : {
-			background : '#ffffff',
-			wireframeBackground : "#000000",
+			background : '#ffffff00',
+			wireframeBackground : "#ffffff00",
 			showCollisions : true,
 			pixelRatio : 2,
 			width : this.containerEl.offsetWidth,
@@ -45,7 +45,7 @@ var App = function() {
 		}
 	});
 
-	this.totalParticles = 100;
+	this.totalParticles = 64;
 
 	this.stack = Matter.Composite.create();
 	this.fixed = Matter.Composite.create();
@@ -72,7 +72,9 @@ var App = function() {
 
 	window.onresize = this.onResize.bind( this );
 
-	this.containerEl.addEventListener("mousemove", this.mouseMove.bind(this) );
+	this.emitter.on('temp', function( value ) {
+		this.mouse = ( value + 5 ) / 40
+	}.bind(this));
 
 	this.onResize();
 
@@ -169,9 +171,6 @@ var Ring = function( parent ){
 	this.parent = parent;
 
  	this.speed = 0.01;
-	
-	var circlesRadius = 0.035;
-	var circlesDistance = 0.34;
 
 	this.timeStep = 0;
 
@@ -208,6 +207,7 @@ var Ring = function( parent ){
 			pos1 : { value : [] },
 			pos2 : { value : [] },
 			pos3 : { value : [] },
+			springVerts : { value : [] },
 			totalGens : { value : this.parent.data.params.generators },
 			totalCircles : { value : this.parent.data.params.rings }
 		},
@@ -235,10 +235,10 @@ Ring.prototype.updateColors = function( ){
 	var color = [];
 
 	for( var j = 0 ; j < this.parent.data.params.rings; j++ ){
-		color.push(1,1,1,0);
-		for( var i = 0 ; i < this.parent.data.params.segments ; i++ ) color.push(1,1,1,1);
-		color.push(1,1,1,1,1,1,1,0);
-		for( var i = this.parent.data.params.segments ; i < 128 ; i++ ) color.push(1,1,1,0);
+		color.push(0,0,0,0);
+		for( var i = 0 ; i < this.parent.data.params.segments ; i++ ) color.push(0,0,0,1);
+		color.push(0,0,0,1,0,0,0,0);
+		for( var i = this.parent.data.params.segments ; i < 128 ; i++ ) color.push(0,0,0,0);
 	}
 	for( var j = this.parent.data.params.rings ; j < 1024; j++ ){
 		color.push(0,0,0,0);
@@ -282,6 +282,15 @@ Ring.prototype.step = function(time){
 		this.mesh.material.uniforms[ 'pos' + j ].value = pos;
 	}
 	this.mesh.geometry.attributes.position.needsUpdate = true;
+
+	var springVerts = [];
+	for( var i = 0 ; i < this.parent.stack.bodies.length ; i++ ){
+		springVerts.push(  (this.parent.stack.bodies[i].position.y - this.parent.fixed.bodies[i].position.y)/-40  );
+	}
+
+	this.mesh.material.uniforms.springVerts.value = springVerts;
+
+	// console.log();
 }
 
 module.exports = Ring;
@@ -289,7 +298,7 @@ module.exports = Ring;
 module.exports = "#ifdef GL_ES\n\tprecision highp float;\n#endif\n\nvarying vec4 vColor;\n\nvoid main( ){\n\tgl_FragColor = vColor;\n}";
 
 },{}],5:[function(require,module,exports){
-module.exports = "#ifdef GL_ES\n\tprecision highp float;\n#endif\n\n#define M_PI 3.1415926535897932384626433832795\n\nvarying vec4 vColor;\n\nuniform vec3 pos0[131];\nuniform vec3 pos1[131];\nuniform vec3 pos2[131];\nuniform vec3 pos3[131];\n\nuniform float totalCircles;\nuniform float totalGens;\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nvoid main() {\n\tvColor = color;\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\tif( totalGens == 2.0 ){\n\t\tif( ids < totalCircles / 2.0 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos0[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 3.0 ){\n\t\tif( ids < totalCircles / 3.3 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles / 3.3 && ids < totalCircles / 6.6 ) {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 4.0 ){\n\t\tif( ids < totalCircles * 0.25 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.25 && ids < totalCircles * 0.5 ) {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.5 && ids < totalCircles * 0.75 ) {\n\t\t\tinterpolate = pos2[ int( iids ) ] + ( pos3[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos3[ int( iids ) ] + ( pos0[ int( iids ) ] - pos3[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * 300.0, sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * 300.0, 0.0 );\n\n\tfPos = interpolate + translate;\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
+module.exports = "#ifdef GL_ES\n\tprecision highp float;\n#endif\n\n#define M_PI 3.1415926535897932384626433832795\n\nvarying vec4 vColor;\n\nuniform vec3 pos0[131];\nuniform vec3 pos1[131];\nuniform vec3 pos2[131];\nuniform vec3 pos3[131];\n\nuniform float totalCircles;\nuniform float totalGens;\nuniform float springVerts[64];\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nvoid main() {\n\tvColor = color;\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\tif( totalGens == 2.0 ){\n\t\tif( ids < totalCircles / 2.0 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos0[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 3.0 ){\n\t\tif( ids < totalCircles / 3.3 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles / 3.3 && ids < totalCircles / 6.6 ) {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 4.0 ){\n\t\tif( ids < totalCircles * 0.25 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.25 && ids < totalCircles * 0.5 ) {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.5 && ids < totalCircles * 0.75 ) {\n\t\t\tinterpolate = pos2[ int( iids ) ] + ( pos3[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos3[ int( iids ) ] + ( pos0[ int( iids ) ] - pos3[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\tfloat idFloat = ids / totalCircles * 64.0;\n\tfloat springStrength = springVerts[int(idFloat)];\n\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 + 30.0 * springStrength ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 + 30.0 * springStrength  ), 0.0 );\n\n\tfPos = interpolate + translate;\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
 
 },{}],6:[function(require,module,exports){
 module.exports = require('./vendor/dat.gui')

@@ -13,6 +13,7 @@ uniform vec3 pos3[131];
 
 uniform float totalCircles;
 uniform float totalGens;
+uniform float springVerts[64];
 
 attribute vec4 color;
 attribute float ids;
@@ -52,8 +53,10 @@ void main() {
 			interpolate = pos3[ int( iids ) ] + ( pos0[ int( iids ) ] - pos3[ int( iids ) ] ) * ids / totalCircles;
 		}
 	}
+	float idFloat = ids / totalCircles * 64.0;
+	float springStrength = springVerts[int(idFloat)];
 
-	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * 300.0, sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * 300.0, 0.0 );
+	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 + 30.0 * springStrength ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 + 30.0 * springStrength  ), 0.0 );
 
 	fPos = interpolate + translate;
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );

@@ -7,9 +7,6 @@ var Ring = function( parent ){
 	this.parent = parent;
 
  	this.speed = 0.01;
-	
-	var circlesRadius = 0.035;
-	var circlesDistance = 0.34;
 
 	this.timeStep = 0;
 
@@ -46,6 +43,7 @@ var Ring = function( parent ){
 			pos1 : { value : [] },
 			pos2 : { value : [] },
 			pos3 : { value : [] },
+			springVerts : { value : [] },
 			totalGens : { value : this.parent.data.params.generators },
 			totalCircles : { value : this.parent.data.params.rings }
 		},
@@ -73,10 +71,10 @@ Ring.prototype.updateColors = function( ){
 	var color = [];
 
 	for( var j = 0 ; j < this.parent.data.params.rings; j++ ){
-		color.push(1,1,1,0);
-		for( var i = 0 ; i < this.parent.data.params.segments ; i++ ) color.push(1,1,1,1);
-		color.push(1,1,1,1,1,1,1,0);
-		for( var i = this.parent.data.params.segments ; i < 128 ; i++ ) color.push(1,1,1,0);
+		color.push(0,0,0,0);
+		for( var i = 0 ; i < this.parent.data.params.segments ; i++ ) color.push(0,0,0,1);
+		color.push(0,0,0,1,0,0,0,0);
+		for( var i = this.parent.data.params.segments ; i < 128 ; i++ ) color.push(0,0,0,0);
 	}
 	for( var j = this.parent.data.params.rings ; j < 1024; j++ ){
 		color.push(0,0,0,0);
@@ -120,6 +118,15 @@ Ring.prototype.step = function(time){
 		this.mesh.material.uniforms[ 'pos' + j ].value = pos;
 	}
 	this.mesh.geometry.attributes.position.needsUpdate = true;
+
+	var springVerts = [];
+	for( var i = 0 ; i < this.parent.stack.bodies.length ; i++ ){
+		springVerts.push(  (this.parent.stack.bodies[i].position.y - this.parent.fixed.bodies[i].position.y)/-40  );
+	}
+
+	this.mesh.material.uniforms.springVerts.value = springVerts;
+
+	// console.log();
 }
 
 module.exports = Ring;
