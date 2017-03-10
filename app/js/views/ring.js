@@ -3,6 +3,8 @@ var lineFs = require('./../../shaders/lineFs.glsl');
 
 var SimplexNoise = require('simplex-noise');
 
+var Chroma = require('chroma-js');
+
 var Ring = function( parent ){
 	this.parent = parent;
 
@@ -43,6 +45,8 @@ var Ring = function( parent ){
 			pos1 : { value : [] },
 			pos2 : { value : [] },
 			pos3 : { value : [] },
+			colors : { value : [0,0,0,0,0,0,0,0,0,0,0,0] },
+			totalColors : { value : 1 },
 			springVerts : { value : [] },
 			totalGens : { value : this.parent.data.params.generators },
 			totalCircles : { value : this.parent.data.params.rings }
@@ -54,15 +58,50 @@ var Ring = function( parent ){
 
 	this.mesh = new THREE.Line( geometry, material );
 
-	this.updateColors( this.parent.data.params.segments );
+	this.updateColors( );
 
 	this.parent.emitter.on('rings', function( value ) {
-		this.updateColors( value );
+		
 		this.mesh.material.uniforms.totalCircles.value = value;
+		this.updateColors( value );
 	}.bind(this));
 
 	this.parent.emitter.on('segments', function( value ) {
-		this.updateColors( value );
+		this.updateColors( );
+	}.bind(this));
+
+	this.parent.emitter.on('totalColors', function( value ) {
+		this.mesh.material.uniforms.totalColors.value = value;
+	}.bind(this));
+
+	this.parent.emitter.on('color0', function( value ) {
+		var c = Chroma(value).rgb();
+
+		this.mesh.material.uniforms.colors.value[0] = c[0]/255;
+		this.mesh.material.uniforms.colors.value[1] = c[1]/255;
+		this.mesh.material.uniforms.colors.value[2] = c[2]/255;
+		// this.updateColors( );
+	}.bind(this));
+
+	this.parent.emitter.on('color1', function( value ) {
+		var c = Chroma(value).rgb();
+		this.mesh.material.uniforms.colors.value[3] = c[0]/255;
+		this.mesh.material.uniforms.colors.value[4] = c[1]/255;
+		this.mesh.material.uniforms.colors.value[5] = c[2]/255;
+	}.bind(this));
+
+	this.parent.emitter.on('color2', function( value ) {
+		var c = Chroma(value).rgb();
+		this.mesh.material.uniforms.colors.value[6] = c[0]/255;
+		this.mesh.material.uniforms.colors.value[7] = c[1]/255;
+		this.mesh.material.uniforms.colors.value[8] = c[2]/255;
+	}.bind(this));
+
+	this.parent.emitter.on('color3', function( value ) {
+		var c = Chroma(value).rgb();
+		this.mesh.material.uniforms.colors.value[9] = c[0]/255;
+		this.mesh.material.uniforms.colors.value[10] = c[1]/255;
+		this.mesh.material.uniforms.colors.value[11] = c[2]/255;
 	}.bind(this));
 
 }
@@ -70,11 +109,36 @@ var Ring = function( parent ){
 Ring.prototype.updateColors = function( ){
 	var color = [];
 
+	// var c1 = Chroma(this.parent.data.params.color0).rgb();
+	// var c2 = Chroma(this.parent.data.params.color1).rgb();
+	// var c3 = Chroma(this.parent.data.params.color2).rgb();
+	// var c4 = Chroma(this.parent.data.params.color3).rgb();
+
+	// if( this.parent.data.totalColors == 2 ){
+	// 	var cols = Chroma.bezier( [ c1, c2, c1 ] ).scale().colors(this.parent.data.params.rings);
+	// }
+
+	// if( this.parent.data.totalColors == 3 ){
+	// 	var cols = Chroma.bezier( [ c1, c2, c3, c1 ] ).scale().colors(this.parent.data.params.rings);
+	// }
+
+	// if( this.parent.data.totalColors == 4 ){
+	// 	var cols = Chroma.bezier( [ c1, c2, c3, c4, c1 ] ).scale().colors(this.parent.data.params.rings);
+	// }
+
+	var c = [ 0,0,0 ];
+
 	for( var j = 0 ; j < this.parent.data.params.rings; j++ ){
-		color.push(0,0,0,0);
-		for( var i = 0 ; i < this.parent.data.params.segments ; i++ ) color.push(0,0,0,1);
-		color.push(0,0,0,1,0,0,0,0);
-		for( var i = this.parent.data.params.segments ; i < 128 ; i++ ) color.push(0,0,0,0);
+		// var c = [ c1[ 0 ] / 255, c1[ 1 ] / 255,  c1[ 2 ] / 255 ];
+		// if( this.parent.data.totalColors > 1 ){
+		// 	var cs = Chroma(cols[j]).rgb();
+		// 	var c = [ cs[ 0 ] / 255, cs[ 1 ] / 255,  cs[ 2 ] / 255 ];
+		// }
+
+		color.push(c[0],c[1],c[2],0);
+		for( var i = 0 ; i < this.parent.data.params.segments ; i++ ) color.push(c[0],c[1],c[2],1);
+		color.push(c[0],c[1],c[2],1,c[0],c[1],c[2],0);
+		for( var i = this.parent.data.params.segments ; i < 128 ; i++ ) color.push(c[0],c[1],c[2],0);
 	}
 	for( var j = this.parent.data.params.rings ; j < 1024; j++ ){
 		color.push(0,0,0,0);
