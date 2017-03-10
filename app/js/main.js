@@ -49,11 +49,14 @@ var App = function() {
 	this.stack = Matter.Composite.create();
 	this.fixed = Matter.Composite.create();
 
-	var group;
+	this.substrate = Matter.Bodies.circle( this.containerEl.offsetWidth / 2, this.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
+	this.substrateAnchor = Matter.Bodies.circle( this.containerEl.offsetWidth / 2, this.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
+	Matter.Body.setStatic(this.substrateAnchor, true );
+	Matter.World.add(engine.world, Matter.Constraint.create({bodyA: this.substrate, pointA: { x: 0, y: 0 }, bodyB: this.substrateAnchor, pointB: { x: 0, y: 0 }, stiffness: .1, render: { strokeWidth : .01, strokeStyle:'#00ffff'}}));
+
 	for (var i = 0; i < this.totalParticles; i++) {
-		Matter.Composite.add( this.fixed, Matter.Bodies.circle( this.containerEl.offsetWidth * i / this.totalParticles, this.containerEl.offsetHeight / 2, .1, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: group}}));
-		Matter.Composite.add( this.stack, Matter.Bodies.circle( this.containerEl.offsetWidth * i / this.totalParticles, this.containerEl.offsetHeight / 2, .1, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: group+1}}));
-		group+=2;
+		Matter.Composite.add( this.fixed, Matter.Bodies.circle( this.containerEl.offsetWidth * i / this.totalParticles, this.containerEl.offsetHeight / 2, .1, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}}));
+		Matter.Composite.add( this.stack, Matter.Bodies.circle( this.containerEl.offsetWidth * i / this.totalParticles, this.containerEl.offsetHeight / 2, .1, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}}));
 	};
 
 	for ( var i = 0; i < this.totalParticles; i ++ ) {
@@ -61,10 +64,11 @@ var App = function() {
 		Matter.Body.setStatic(this.fixed.bodies[i], true );
 	}
 
-	Matter.World.add( engine.world, [ this.stack ] );
+	Matter.World.add( engine.world, [ this.stack, this.substrate, this.substrateAnchor ] );
 
-	this.mouse = 0;
-	this.mouse2 = 0;
+	this.temp = 0;
+	this.temp2 = 0;
+	this.subs = 0;
 
 	Matter.Engine.run(engine);
 	Matter.Render.run(render);
@@ -72,7 +76,11 @@ var App = function() {
 	window.onresize = this.onResize.bind( this );
 
 	this.emitter.on('temp', function( value ) {
-		this.mouse = ( value + 5 ) / 40
+		this.temp = ( value + 5 ) / 40
+	}.bind(this));
+
+	this.emitter.on('substrate', function( value ) {
+		this.subs = value
 	}.bind(this));
 
 	this.onResize();
@@ -88,22 +96,20 @@ App.prototype.onResize = function(e) {
 	this.camera.updateProjectionMatrix();
 }
 
-App.prototype.mouseMove = function(e) {
-	this.mouse = ( e.offsetX - this.containerEl.offsetWidth / 2) / this.containerEl.offsetWidth + 0.5;
-};
-
 App.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
 	var range = 0.5;
-	if( this.mouse > 1 - range ) this.mouse2 = this.mouse - 1;
-	else if( this.mouse < range ) this.mouse2 = this.mouse + 1;
-	else this.mouse2 = 0;
+	if( this.temp > 1 - range ) this.temp2 = this.temp - 1;
+	else if( this.temp < range ) this.temp2 = this.temp + 1;
+	else this.temp2 = 0;
 	for( var i = 0 ; i < this.totalParticles; i++ ){
-		var val = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.mouse) / range ) );
-		var val2 = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.mouse2) / range ) );
+		var val = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.temp) / range ) );
+		var val2 = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.temp2) / range ) );
 		Matter.Body.applyForce( this.stack.bodies[ i ], this.stack.bodies[ i ].position, { x : 0 , y: -( Math.sin( val * Math.PI ) * 0.001) / 2 } );
 		Matter.Body.applyForce( this.stack.bodies[ i ], this.stack.bodies[ i ].position, { x : 0 , y: -( Math.sin( val2 * Math.PI ) * 0.001) / 2 } );
 	}
+
+	Matter.Body.applyForce( this.substrate, this.substrateAnchor.position, { x : 0 , y: -this.subs } );
 
 	this.rings[0].step( time );
 	this.renderer.render( this.scene, this.camera );

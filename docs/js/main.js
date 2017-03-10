@@ -50,11 +50,14 @@ var App = function() {
 	this.stack = Matter.Composite.create();
 	this.fixed = Matter.Composite.create();
 
-	var group;
+	this.substrate = Matter.Bodies.circle( this.containerEl.offsetWidth / 2, this.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
+	this.substrateAnchor = Matter.Bodies.circle( this.containerEl.offsetWidth / 2, this.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
+	Matter.Body.setStatic(this.substrateAnchor, true );
+	Matter.World.add(engine.world, Matter.Constraint.create({bodyA: this.substrate, pointA: { x: 0, y: 0 }, bodyB: this.substrateAnchor, pointB: { x: 0, y: 0 }, stiffness: .1, render: { strokeWidth : .01, strokeStyle:'#00ffff'}}));
+
 	for (var i = 0; i < this.totalParticles; i++) {
-		Matter.Composite.add( this.fixed, Matter.Bodies.circle( this.containerEl.offsetWidth * i / this.totalParticles, this.containerEl.offsetHeight / 2, .1, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: group}}));
-		Matter.Composite.add( this.stack, Matter.Bodies.circle( this.containerEl.offsetWidth * i / this.totalParticles, this.containerEl.offsetHeight / 2, .1, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: group+1}}));
-		group+=2;
+		Matter.Composite.add( this.fixed, Matter.Bodies.circle( this.containerEl.offsetWidth * i / this.totalParticles, this.containerEl.offsetHeight / 2, .1, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}}));
+		Matter.Composite.add( this.stack, Matter.Bodies.circle( this.containerEl.offsetWidth * i / this.totalParticles, this.containerEl.offsetHeight / 2, .1, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}}));
 	};
 
 	for ( var i = 0; i < this.totalParticles; i ++ ) {
@@ -62,10 +65,11 @@ var App = function() {
 		Matter.Body.setStatic(this.fixed.bodies[i], true );
 	}
 
-	Matter.World.add( engine.world, [ this.stack ] );
+	Matter.World.add( engine.world, [ this.stack, this.substrate, this.substrateAnchor ] );
 
-	this.mouse = 0;
-	this.mouse2 = 0;
+	this.temp = 0;
+	this.temp2 = 0;
+	this.subs = 0;
 
 	Matter.Engine.run(engine);
 	Matter.Render.run(render);
@@ -73,7 +77,11 @@ var App = function() {
 	window.onresize = this.onResize.bind( this );
 
 	this.emitter.on('temp', function( value ) {
-		this.mouse = ( value + 5 ) / 40
+		this.temp = ( value + 5 ) / 40
+	}.bind(this));
+
+	this.emitter.on('substrate', function( value ) {
+		this.subs = value
 	}.bind(this));
 
 	this.onResize();
@@ -89,22 +97,20 @@ App.prototype.onResize = function(e) {
 	this.camera.updateProjectionMatrix();
 }
 
-App.prototype.mouseMove = function(e) {
-	this.mouse = ( e.offsetX - this.containerEl.offsetWidth / 2) / this.containerEl.offsetWidth + 0.5;
-};
-
 App.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
 	var range = 0.5;
-	if( this.mouse > 1 - range ) this.mouse2 = this.mouse - 1;
-	else if( this.mouse < range ) this.mouse2 = this.mouse + 1;
-	else this.mouse2 = 0;
+	if( this.temp > 1 - range ) this.temp2 = this.temp - 1;
+	else if( this.temp < range ) this.temp2 = this.temp + 1;
+	else this.temp2 = 0;
 	for( var i = 0 ; i < this.totalParticles; i++ ){
-		var val = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.mouse) / range ) );
-		var val2 = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.mouse2) / range ) );
+		var val = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.temp) / range ) );
+		var val2 = Math.max( 0 , ( range - Math.abs( i / this.totalParticles - this.temp2) / range ) );
 		Matter.Body.applyForce( this.stack.bodies[ i ], this.stack.bodies[ i ].position, { x : 0 , y: -( Math.sin( val * Math.PI ) * 0.001) / 2 } );
 		Matter.Body.applyForce( this.stack.bodies[ i ], this.stack.bodies[ i ].position, { x : 0 , y: -( Math.sin( val2 * Math.PI ) * 0.001) / 2 } );
 	}
+
+	Matter.Body.applyForce( this.substrate, this.substrateAnchor.position, { x : 0 , y: -this.subs } );
 
 	this.rings[0].step( time );
 	this.renderer.render( this.scene, this.camera );
@@ -257,6 +263,7 @@ var Ring = function( parent ){
 			pos2 : { value : [] },
 			pos3 : { value : [] },
 			colors : { value : [0,0,0,0,0,0,0,0,0,0,0,0] },
+			scale : { value : 1 },
 			totalColors : { value : 1 },
 			springVerts : { value : [] },
 			totalGens : { value : this.parent.data.params.generators },
@@ -366,6 +373,9 @@ Ring.prototype.step = function(time){
 	
 	this.timeStep += this.speed;
 
+	this.ringScale = ( this.parent.substrate.position.y - this.parent.substrateAnchor.position.y ) / 100;
+	this.mesh.material.uniforms.scale.value = 0.5 - this.ringScale;
+
 	for( var j = 0 ; j < 4 ; j++ ){
 		var zeropos = [];
 		var pos = [];
@@ -401,7 +411,7 @@ Ring.prototype.step = function(time){
 
 	this.mesh.material.uniforms.springVerts.value = springVerts;
 
-	// console.log();
+	
 }
 
 module.exports = Ring;
@@ -409,7 +419,7 @@ module.exports = Ring;
 module.exports = "#ifdef GL_ES\n\tprecision highp float;\n#endif\n\nvarying vec4 vColor;\n\nvoid main( ){\n\tgl_FragColor = vColor;\n}";
 
 },{}],5:[function(require,module,exports){
-module.exports = "#ifdef GL_ES\n\tprecision highp float;\n#endif\n\n#define M_PI 3.1415926535897932384626433832795\n\nvarying vec4 vColor;\n\nuniform vec3 pos0[131];\nuniform vec3 pos1[131];\nuniform vec3 pos2[131];\nuniform vec3 pos3[131];\n\nuniform vec3 colors[4];\nuniform float totalColors;\n\nuniform float totalCircles;\nuniform float totalGens;\nuniform float springVerts[64];\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nvoid main() {\n\tvColor = color;\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\tif( totalColors == 1.0 ){\n\t\tvColor.rgb = colors[0];\n\t}\n\n\tif( totalColors == 2.0 ){\n\t\tif( ids < totalCircles / 2.0 ){\n\t\t\tvColor.rgb = colors[0] + ( colors[1] - colors[0] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tvColor.rgb = colors[1] + ( colors[0] - colors[1] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalColors == 3.0 ){\n\t\tif( ids < totalCircles / 3.3 ){\n\t\t\tvColor.rgb = colors[0] + ( colors[1] - colors[0] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles / 3.3 && ids < totalCircles / 6.6 ) {\n\t\t\tvColor.rgb = colors[1] + ( colors[2] - colors[1] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tvColor.rgb = colors[2] + ( colors[0] - colors[2] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalColors == 4.0 ){\n\t\tif( ids < totalCircles * 0.25 ){\n\t\t\tvColor.rgb = colors[0] + ( colors[1] - colors[0] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.25 && ids < totalCircles * 0.5 ) {\n\t\t\tvColor.rgb = colors[1] + ( colors[2] - colors[1] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.5 && ids < totalCircles * 0.75 ) {\n\t\t\tvColor.rgb = colors[2] + ( colors[3] - colors[2] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tvColor.rgb = colors[3] + ( colors[0] - colors[3] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 2.0 ){\n\t\tif( ids < totalCircles / 2.0 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos0[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 3.0 ){\n\t\tif( ids < totalCircles / 3.3 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles / 3.3 && ids < totalCircles / 6.6 ) {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 4.0 ){\n\t\tif( ids < totalCircles * 0.25 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.25 && ids < totalCircles * 0.5 ) {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.5 && ids < totalCircles * 0.75 ) {\n\t\t\tinterpolate = pos2[ int( iids ) ] + ( pos3[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos3[ int( iids ) ] + ( pos0[ int( iids ) ] - pos3[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\tfloat idFloat = ids / totalCircles * 64.0;\n\tfloat springStrength = springVerts[int(idFloat)];\n\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 ), 0.0 );\n\n\tfPos = interpolate + translate;\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
+module.exports = "#ifdef GL_ES\n\tprecision highp float;\n#endif\n\n#define M_PI 3.1415926535897932384626433832795\n\nvarying vec4 vColor;\n\nuniform vec3 pos0[131];\nuniform vec3 pos1[131];\nuniform vec3 pos2[131];\nuniform vec3 pos3[131];\n\nuniform vec3 colors[4];\nuniform float totalColors;\nuniform float scale;\n\nuniform float totalCircles;\nuniform float totalGens;\nuniform float springVerts[64];\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nvoid main() {\n\tvColor = color;\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\tif( totalColors == 1.0 ){\n\t\tvColor.rgb = colors[0];\n\t}\n\n\tif( totalColors == 2.0 ){\n\t\tif( ids < totalCircles / 2.0 ){\n\t\t\tvColor.rgb = colors[0] + ( colors[1] - colors[0] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tvColor.rgb = colors[1] + ( colors[0] - colors[1] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalColors == 3.0 ){\n\t\tif( ids < totalCircles / 3.3 ){\n\t\t\tvColor.rgb = colors[0] + ( colors[1] - colors[0] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles / 3.3 && ids < totalCircles / 6.6 ) {\n\t\t\tvColor.rgb = colors[1] + ( colors[2] - colors[1] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tvColor.rgb = colors[2] + ( colors[0] - colors[2] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalColors == 4.0 ){\n\t\tif( ids < totalCircles * 0.25 ){\n\t\t\tvColor.rgb = colors[0] + ( colors[1] - colors[0] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.25 && ids < totalCircles * 0.5 ) {\n\t\t\tvColor.rgb = colors[1] + ( colors[2] - colors[1] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.5 && ids < totalCircles * 0.75 ) {\n\t\t\tvColor.rgb = colors[2] + ( colors[3] - colors[2] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tvColor.rgb = colors[3] + ( colors[0] - colors[3] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 2.0 ){\n\t\tif( ids < totalCircles / 2.0 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos0[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 3.0 ){\n\t\tif( ids < totalCircles / 3.3 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles / 3.3 && ids < totalCircles / 6.6 ) {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\n\tif( totalGens == 4.0 ){\n\t\tif( ids < totalCircles * 0.25 ){\n\t\t\tinterpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.25 && ids < totalCircles * 0.5 ) {\n\t\t\tinterpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else if( ids >= totalCircles * 0.5 && ids < totalCircles * 0.75 ) {\n\t\t\tinterpolate = pos2[ int( iids ) ] + ( pos3[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;\n\t\t} else {\n\t\t\tinterpolate = pos3[ int( iids ) ] + ( pos0[ int( iids ) ] - pos3[ int( iids ) ] ) * ids / totalCircles;\n\t\t}\n\t}\n\tfloat idFloat = ids / totalCircles * 64.0;\n\tfloat springStrength = springVerts[int(idFloat)];\n\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 ), 0.0 );\n\n\tfPos = interpolate * scale + translate;\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
 
 },{}],6:[function(require,module,exports){
 

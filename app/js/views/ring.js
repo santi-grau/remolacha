@@ -46,6 +46,7 @@ var Ring = function( parent ){
 			pos2 : { value : [] },
 			pos3 : { value : [] },
 			colors : { value : [0,0,0,0,0,0,0,0,0,0,0,0] },
+			scale : { value : 1 },
 			totalColors : { value : 1 },
 			springVerts : { value : [] },
 			totalGens : { value : this.parent.data.params.generators },
@@ -155,6 +156,9 @@ Ring.prototype.step = function(time){
 	
 	this.timeStep += this.speed;
 
+	this.ringScale = ( this.parent.substrate.position.y - this.parent.substrateAnchor.position.y ) / 100;
+	this.mesh.material.uniforms.scale.value = 0.5 - this.ringScale;
+
 	for( var j = 0 ; j < 4 ; j++ ){
 		var zeropos = [];
 		var pos = [];
@@ -190,7 +194,7 @@ Ring.prototype.step = function(time){
 
 	this.mesh.material.uniforms.springVerts.value = springVerts;
 
-	// console.log();
+	
 }
 
 module.exports = Ring;
