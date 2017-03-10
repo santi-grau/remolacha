@@ -15,4 +15,4 @@ Should be ready on port 5000
 4. Position to springs
 5. Dat.gui - OK
 6. Color in VS is weird, it should also affect position interposlation
-7. Width of rings with substrate
+7. Width of rings with substrate - OK
