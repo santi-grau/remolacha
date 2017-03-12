@@ -14,6 +14,8 @@ var nib = require('nib');
 var fs = require('fs');
 var pckg = require('./package.json');
 var jade = require('jade');
+var http = require("http");
+var WebSocketServer = require("ws").Server;
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Initialize vars + constants
@@ -50,6 +52,25 @@ app.get('/', function(req, res){
 // | Init!!
 // └────────────────────────────────────────────────────────────────────┘
 app.listen(port);
+
+
+var server = http.createServer(app);
+server.listen(3000);
+
+var wss = new WebSocketServer( { server: server } );
+
+wss.on("connection", function(ws) {
+  var id = setInterval(function() {
+    ws.send(JSON.stringify(new Date()), function() {  })
+  }, 1000)
+
+  // console.log("websocket connection open")
+
+  ws.on("close", function() {
+    // console.log("websocket connection close")
+    clearInterval(id)
+  })
+})
 
 figlet.fonts(function(err, fonts) {
 	var font = fonts[Math.floor(Math.random() * fonts.length)];

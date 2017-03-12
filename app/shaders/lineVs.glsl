@@ -4,6 +4,38 @@
 
 #define M_PI 3.1415926535897932384626433832795
 
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+
+vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+
+vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+
+float snoise(vec2 v) { 
+	const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+	vec2 i  = floor(v + dot(v, C.yy) );
+	vec2 x0 = v -   i + dot(i, C.xx);
+	vec2 i1;
+	i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+	vec4 x12 = x0.xyxy + C.xxzz;
+	x12.xy -= i1;
+
+	i = mod289(i);
+	vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+	vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+	m = m*m ;
+	m = m*m ;
+	vec3 x = 2.0 * fract(p * C.www) - 1.0;
+	vec3 h = abs(x) - 0.5;
+	vec3 ox = floor(x + 0.5);
+	vec3 a0 = x - ox;
+	m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+
+	vec3 g;
+	g.x  = a0.x  * x0.x  + h.x  * x0.y;
+	g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+	return 130.0 * dot(m, g);
+}
+
 varying vec4 vColor;
 
 uniform vec3 pos0[131];
@@ -11,56 +43,35 @@ uniform vec3 pos1[131];
 uniform vec3 pos2[131];
 uniform vec3 pos3[131];
 
-uniform vec3 colors[4];
-uniform float totalColors;
+//uniform vec3 colors[4];
+//uniform float totalColors;
 uniform float scale;
 
 uniform float totalCircles;
 uniform float totalGens;
-uniform float springVerts[64];
+//uniform float springVerts[64];
+uniform float ringRadius;
+uniform float light;
+uniform float water;
+uniform float noise;
 
 attribute vec4 color;
 attribute float ids;
 attribute float iids;
 
+vec3 hsv2rgb( vec3 c ) {
+	vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+	vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+	return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
 void main() {
-	vColor = color;
+	
 	vec3 fPos;
 	vec3 interpolate;
 
-	if( totalColors == 1.0 ){
-		vColor.rgb = colors[0];
-	}
-
-	if( totalColors == 2.0 ){
-		if( ids < totalCircles / 2.0 ){
-			vColor.rgb = colors[0] + ( colors[1] - colors[0] ) * ids / totalCircles;
-		} else {
-			vColor.rgb = colors[1] + ( colors[0] - colors[1] ) * ids / totalCircles;
-		}
-	}
-
-	if( totalColors == 3.0 ){
-		if( ids < totalCircles / 3.3 ){
-			vColor.rgb = colors[0] + ( colors[1] - colors[0] ) * ids / totalCircles;
-		} else if( ids >= totalCircles / 3.3 && ids < totalCircles / 6.6 ) {
-			vColor.rgb = colors[1] + ( colors[2] - colors[1] ) * ids / totalCircles;
-		} else {
-			vColor.rgb = colors[2] + ( colors[0] - colors[2] ) * ids / totalCircles;
-		}
-	}
-
-	if( totalColors == 4.0 ){
-		if( ids < totalCircles * 0.25 ){
-			vColor.rgb = colors[0] + ( colors[1] - colors[0] ) * ids / totalCircles;
-		} else if( ids >= totalCircles * 0.25 && ids < totalCircles * 0.5 ) {
-			vColor.rgb = colors[1] + ( colors[2] - colors[1] ) * ids / totalCircles;
-		} else if( ids >= totalCircles * 0.5 && ids < totalCircles * 0.75 ) {
-			vColor.rgb = colors[2] + ( colors[3] - colors[2] ) * ids / totalCircles;
-		} else {
-			vColor.rgb = colors[3] + ( colors[0] - colors[3] ) * ids / totalCircles;
-		}
-	}
+	vColor.rgb = hsv2rgb( vec3( light + ids / (totalCircles * 6.0) , 1.0, 1.0 ) );
+	vColor.a = color.a;
 
 	if( totalGens == 2.0 ){
 		if( ids < totalCircles / 2.0 ){
@@ -92,10 +103,10 @@ void main() {
 		}
 	}
 	float idFloat = ids / totalCircles * 64.0;
-	float springStrength = springVerts[int(idFloat)];
+	//float springStrength = springVerts[int(idFloat)];
 
-	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( 300.0 ), 0.0 );
+	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), 0.0 );
 
-	fPos = interpolate * scale + translate;
+	fPos = interpolate * scale * ( snoise( vec2( translate.x / 200.0 + noise, translate.y / 200.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 200.0 + noise, translate.y / 200.0 ) );
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );
 }
