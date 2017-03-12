@@ -48,8 +48,8 @@ var Data = function( parent ){
 		this.audio = false;
 
 		this.show = false;
-		this.segments = 32;
-		this.rings = 256;
+		this.segments = 64;
+		this.rings = 512;
 		this.generators = 4;
 		this.idleIntensity = 0.5;
 	
