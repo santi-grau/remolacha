@@ -10,12 +10,10 @@ var Ring = require('./views/ring');
 var Data = require('./views/data');
 
 var App = function() {
-
-	//var host = location.origin.replace(/^http/, 'ws');
-	// var ws = new WebSocket('ws://localhost:3000/');
-	// ws.onmessage = function (event) {
-		// console.log( JSON.parse(event.data) );
-	// };
+	var ws = new WebSocket('ws://localhost:3000/');
+	ws.onmessage = function (event) {
+		console.log( JSON.parse(event.data) );
+	};
 
 	this.emitter = new EventEmitter();
 
