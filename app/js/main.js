@@ -2,6 +2,8 @@ window.THREE = require('three');
 var OrbitControls = require('three-orbit-controls')(THREE);
 var Matter = require('matter-js');
 
+var TweenMax = require('gsap');
+
 var EventEmitter = require('events').EventEmitter;
 
 
@@ -9,9 +11,33 @@ var Ring = require('./views/ring');
 var Data = require('./views/data');
 
 var App = function() {
+	var _this = this;
 	var ws = new WebSocket('ws://localhost:3000/');
 	ws.onmessage = function (event) {
-		console.log( JSON.parse(event.data) );
+		var data = JSON.parse( event.data );
+		if( data.action == 'light' ) {
+			if( !_this.data.lightIsOn ){
+				_this.data.lightInc = 0.01;
+				_this.data.lightInterval = setInterval(function(){
+					_this.data.lightInc = 0.0001;
+				}, 5000);
+			} else {
+				clearInterval( _this.data.lightInterval );
+				_this.data.lightInc = 0.0001;
+			}
+			_this.data.lightIsOn = !_this.data.lightIsOn;
+		}
+
+		if( data.action == 'substrate' ) {
+			if( _this.data.gui.substrate < 0.1 ) _this.data.gui.substrate = 0.25;
+			else if( _this.data.gui.substrate > 0 && _this.data.gui.substrate < 0.25 ) _this.data.gui.substrate = 0.5;
+			else if( _this.data.gui.substrate >= 0.25 && _this.data.gui.substrate < 0.5 ) _this.data.gui.substrate = 0.75;
+			else _this.data.gui.substrate = 1;
+		}
+
+		if( data.action == 'water' ) {
+			TweenMax.to( _this.data.gui, 0.2, { water : 1 });
+		}
 	};
 
 	this.emitter = new EventEmitter();

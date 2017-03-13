@@ -66,13 +66,11 @@ server.listen(3000);
 var wss = new WebSocketServer( { server: server } );
 
 wss.on("connection", function(ws) {
-	var id = setInterval(function() {
-		ws.send(JSON.stringify(new Date()), function() {  })
-	}, 1000)
-
-	ws.on("close", function() {
-		clearInterval(id)
-	})
+	ws.on('message', function(data) {
+		wss.clients.forEach(function each(client) {
+			client.send(data);
+		});
+	});
 })
 
 figlet.fonts(function(err, fonts) {
