@@ -23,7 +23,8 @@ var WebSocketServer = require('ws').Server;
 // | Initialize vars + constants
 // └────────────────────────────────────────────────────────────────────┘
 var app = express();
-var port = Number(process.env.PORT || 5000);
+var port = Number( process.env.PORT || 5000 );
+var wsport = Number( process.env.WSPORT || 5001 );
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | App setup
@@ -61,7 +62,7 @@ app.listen(port);
 
 
 var server = http.createServer(app);
-server.listen(5001);
+server.listen(wsport);
 
 var wss = new WebSocketServer( { server: server } );
 
