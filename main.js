@@ -58,13 +58,16 @@ app.get('/controls', function(req, res){
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Init!!
 // └────────────────────────────────────────────────────────────────────┘
-app.listen(port);
-
+// app.listen(port);
 
 var server = http.createServer(app);
-server.listen(wsport);
+var wss = new WebSocketServer({ server });
 
-var wss = new WebSocketServer( { server: server } );
+
+
+server.listen(port);
+// var wss = new WebSocketServer({server: app});
+
 
 wss.on("connection", function(ws) {
 	ws.on('message', function(data) {
