@@ -12,7 +12,12 @@ var Data = require('./views/data');
 
 var App = function() {
 	var _this = this;
-	var ws = new WebSocket('ws://localhost:3000/');
+	
+	var host;
+	if( location.origin.indexOf( 'localhost' ) !== -1 ) host = 'ws://localhost:3000/';
+	else host = location.origin.replace(/^http/, 'ws')
+	var ws = new WebSocket( host );
+
 	ws.onmessage = function (event) {
 		var data = JSON.parse( event.data );
 		if( data.action == 'light' ) {
