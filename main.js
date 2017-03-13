@@ -17,7 +17,7 @@ var fs = require('fs');
 var pckg = require('./package.json');
 var jade = require('jade');
 var http = require("http");
-const SocketServer = require('ws').Server;
+var SocketServer = require('ws').Server;
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Initialize vars + constants
