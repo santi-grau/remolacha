@@ -1,3 +1,5 @@
+'use strict';
+
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Filename: main.js
 // └────────────────────────────────────────────────────────────────────┘
@@ -15,7 +17,7 @@ var fs = require('fs');
 var pckg = require('./package.json');
 var jade = require('jade');
 var http = require("http");
-// var WebSocketServer = require("ws").Server;
+const SocketServer = require('ws').Server;
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Initialize vars + constants

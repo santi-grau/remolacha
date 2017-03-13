@@ -30,7 +30,7 @@
     "stylus": "*",
     "three": "^0.84.0",
     "three-orbit-controls": "^82.1.0",
-    "ws": "^2.2.0"
+    "ws": "1.1.0"
   },
   "devDependencies": {
     "grunt": "^1.0.1",
