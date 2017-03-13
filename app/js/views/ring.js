@@ -101,6 +101,7 @@ Ring.prototype.step = function(time){
 
 	this.mesh.material.uniforms.scale.value = 0.5 + this.parent.data.substrate;
 	this.mesh.material.uniforms.light.value = this.parent.data.gui.light;
+	this.mesh.material.uniforms.water.value = this.parent.data.gui.water;
 	this.mesh.material.uniforms.noise.value = this.noiseInc;
 
 	for( var j = 0 ; j < 4 ; j++ ){

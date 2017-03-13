@@ -116,6 +116,8 @@ Data.prototype.step = function( time ){
 	if( this.gui.light < 1 ) this.gui.light += this.lightInc;
 	else this.gui.light = 0;
 
+	if( this.gui.water > 0 ) this.gui.water -= 0.001;
+
 	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.gui.substrate } );
 	if( this.gui.substrate > 0 ) this.gui.substrate -= 0.001;
 	this.substrate = ( this.substrateAnchor.position.y - this.substrateParticle.position.y ) / 125;

@@ -107,6 +107,6 @@ void main() {
 
 	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), 0.0 );
 
-	fPos = interpolate * scale * ( snoise( vec2( translate.x / 200.0 + noise, translate.y / 200.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 200.0 + noise, translate.y / 200.0 ) );
+	fPos = interpolate * scale * ( snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) );
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );
 }

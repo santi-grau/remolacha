@@ -47,6 +47,10 @@ app.get('/', function(req, res){
 	res.render( 'main', {title: pckg.name});
 });
 
+app.get('/controls', function(req, res){
+	res.render( 'controls', {title: pckg.name});
+});
+
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Init!!
@@ -54,23 +58,20 @@ app.get('/', function(req, res){
 app.listen(port);
 
 
-var server = http.createServer(app);
-server.listen(3000);
+// var server = http.createServer(app);
+// server.listen(3000);
 
-var wss = new WebSocketServer( { server: server } );
+// var wss = new WebSocketServer( { server: server } );
 
-wss.on("connection", function(ws) {
-  var id = setInterval(function() {
-    ws.send(JSON.stringify(new Date()), function() {  })
-  }, 1000)
+// wss.on("connection", function(ws) {
+//   var id = setInterval(function() {
+//     ws.send(JSON.stringify(new Date()), function() {  })
+//   }, 1000)
 
-  // console.log("websocket connection open")
-
-  ws.on("close", function() {
-    // console.log("websocket connection close")
-    clearInterval(id)
-  })
-})
+//   ws.on("close", function() {
+//     clearInterval(id)
+//   })
+// })
 
 figlet.fonts(function(err, fonts) {
 	var font = fonts[Math.floor(Math.random() * fonts.length)];
