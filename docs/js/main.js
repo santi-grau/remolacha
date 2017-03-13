@@ -15,7 +15,7 @@ var App = function() {
 	var _this = this;
 	
 	var host;
-	if( location.origin.indexOf( 'localhost' ) !== -1 ) host = 'ws://localhost:3000/';
+	if( location.origin.indexOf( 'localhost' ) !== -1 ) host = 'ws://localhost:4000/';
 	else host = location.origin.replace(/^http/, 'ws')
 	var ws = new WebSocket( host );
 
