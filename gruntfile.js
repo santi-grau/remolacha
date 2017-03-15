@@ -24,16 +24,6 @@ module.exports = function(grunt) {
         }]
       }
     },
-   // browserify: {
-   //   dist: {
-   //     files: {
-   //       'docs/js/main.js': ['app/js/main.js']
-   //     },
-   //     options: {
-       
-   //     }
-   //   }
-   // },
     jade: {
       compile: {
         options: {
@@ -67,14 +57,12 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jade');
   grunt.loadNpmTasks('grunt-contrib-stylus');
   grunt.loadNpmTasks('grunt-contrib-copy');
-  // grunt.loadNpmTasks('grunt-browserify');
 
   // Build Tasks
   grunt.registerTask('build', [
     'clean',
     'copy',
     'jade',
-    // 'browserify',
     'stylus'
   ]);
 };
