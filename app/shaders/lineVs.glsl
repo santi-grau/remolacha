@@ -43,15 +43,13 @@ uniform vec3 pos1[131];
 uniform vec3 pos2[131];
 uniform vec3 pos3[131];
 
-//uniform vec3 colors[4];
-//uniform float totalColors;
 uniform float scale;
 
 uniform float totalCircles;
-uniform float totalGens;
-//uniform float springVerts[64];
 uniform float ringRadius;
 uniform float light;
+uniform float saturation;
+uniform float value;
 uniform float water;
 uniform float noise;
 
@@ -60,9 +58,9 @@ attribute float ids;
 attribute float iids;
 
 vec3 hsv2rgb( vec3 c ) {
-	vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-	vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-	return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+	vec4 K = vec4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );
+	vec3 p = abs( fract( c.xxx + K.xyz ) * 6.0 - K.www );
+	return c.z * mix( K.xxx, clamp( p - K.xxx, 0.0, 1.0 ), c.y );
 }
 
 void main() {
@@ -70,43 +68,27 @@ void main() {
 	vec3 fPos;
 	vec3 interpolate;
 
-	vColor.rgb = hsv2rgb( vec3( light + ids / (totalCircles * 6.0) , 1.0, 1.0 ) );
+	// vertex colors
+	if( ids < totalCircles / 2.0 ) vColor.rgb = hsv2rgb( vec3( light + ids / totalCircles / 2.0 , saturation, value ) );
+	else vColor.rgb = hsv2rgb( vec3( light + ( totalCircles - ids ) / totalCircles / 2.0 , saturation, value ) );
 	vColor.a = color.a;
 
-	if( totalGens == 2.0 ){
-		if( ids < totalCircles / 2.0 ){
-			interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;
-		} else {
-			interpolate = pos1[ int( iids ) ] + ( pos0[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;
-		}
+	
+	if( ids < totalCircles / 3.3 ){
+		interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;
+	} else if( ids >= totalCircles / 3.3 && ids < totalCircles / 6.6 ) {
+		interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;
+	} else {
+		interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;
 	}
 
-	if( totalGens == 3.0 ){
-		if( ids < totalCircles / 3.3 ){
-			interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;
-		} else if( ids >= totalCircles / 3.3 && ids < totalCircles / 6.6 ) {
-			interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;
-		} else {
-			interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;
-		}
-	}
-
-	if( totalGens == 4.0 ){
-		if( ids < totalCircles * 0.25 ){
-			interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;
-		} else if( ids >= totalCircles * 0.25 && ids < totalCircles * 0.5 ) {
-			interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;
-		} else if( ids >= totalCircles * 0.5 && ids < totalCircles * 0.75 ) {
-			interpolate = pos2[ int( iids ) ] + ( pos3[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;
-		} else {
-			interpolate = pos3[ int( iids ) ] + ( pos0[ int( iids ) ] - pos3[ int( iids ) ] ) * ids / totalCircles;
-		}
-	}
 	float idFloat = ids / totalCircles * 64.0;
 	//float springStrength = springVerts[int(idFloat)];
 
 	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), 0.0 );
 
-	fPos = interpolate * scale * ( snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) );
+	fPos = interpolate + translate;
+	//fPos = interpolate * scale * ( snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) );
+	
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );
 }

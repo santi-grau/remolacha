@@ -48,11 +48,12 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 			water : { value : this.parent.data.gui.water },
 			colors : { value : [0,0,0,0,0,0,0,0,0,0,0,0] },
 			scale : { value : 1 },
+			saturation : { value : this.parent.data.gui.colorSaturation },
+			value : { value : this.parent.data.gui.colorValue },
 			noise : { value : this.noiseInc },
 			totalColors : { value : 1 },
 			ringRadius : { value : this.ringRadius },
 			//springVerts : { value : [] },
-			totalGens : { value : this.parent.data.gui.generators },
 			totalCircles : { value : this.parent.data.gui.rings }
 		},
 		transparent : true,
@@ -71,6 +72,14 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 
 	this.parent.emitter.on('segments', function( value ) {
 		this.updateColors( );
+	}.bind(this));
+
+	this.parent.emitter.on('saturation', function( value ) {
+		this.mesh.material.uniforms.saturation.value = value;
+	}.bind(this));
+
+	this.parent.emitter.on('value', function( value ) {
+		this.mesh.material.uniforms.value.value = value;
 	}.bind(this));
 
 }
@@ -104,7 +113,7 @@ Ring.prototype.step = function(time){
 	this.mesh.material.uniforms.water.value = this.parent.data.gui.water;
 	this.mesh.material.uniforms.noise.value = this.noiseInc;
 
-	for( var j = 0 ; j < 4 ; j++ ){
+	for( var j = 0 ; j < 3 ; j++ ){
 		var pos = [], zeropos = [];
 		for( var i = 0 ; i < this.parent.data.gui.segments ; i++ ){
 			var p = [ Math.cos( Math.PI * 2 * i / ( this.parent.data.gui.segments ) ), Math.sin( Math.PI * 2 * i / ( this.parent.data.gui.segments ) ) ];

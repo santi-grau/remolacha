@@ -16,4 +16,5 @@ Should be ready on port 5000
 5. Dat.gui - OK
 6. Color in VS is weird, it should also affect position interpolation
 7. Width of rings with substrate - OK
-8. Add web sockets
+8. Add web sockets - OK
+9. Add saturation and level selector - OK
