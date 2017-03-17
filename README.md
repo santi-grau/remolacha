@@ -18,3 +18,4 @@ Should be ready on port 5000
 7. Width of rings with substrate - OK
 8. Add web sockets - OK
 9. Add saturation and level selector - OK
+10. Fix light and make transition smoother - OK

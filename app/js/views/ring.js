@@ -53,6 +53,7 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 			noise : { value : this.noiseInc },
 			totalColors : { value : 1 },
 			ringRadius : { value : this.ringRadius },
+			audioData : { value :[] },
 			//springVerts : { value : [] },
 			totalCircles : { value : this.parent.data.gui.rings }
 		},
@@ -112,6 +113,8 @@ Ring.prototype.step = function(time){
 	this.mesh.material.uniforms.light.value = this.parent.data.gui.light;
 	this.mesh.material.uniforms.water.value = this.parent.data.gui.water;
 	this.mesh.material.uniforms.noise.value = this.noiseInc;
+
+	this.mesh.material.uniforms.audioData.value = this.parent.data.audioData;
 
 	for( var j = 0 ; j < 3 ; j++ ){
 		var pos = [], zeropos = [];

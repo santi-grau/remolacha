@@ -8,6 +8,9 @@ var Data = function( parent ){
 
 	this.totalColors = 1;
 
+	this.audioData = [];
+
+
 	this.substrate = 0;
 	this.light = 0;
 	this.water = 0;
@@ -56,7 +59,8 @@ var Data = function( parent ){
 		this.substrate = 0.0;
 
 		this.playPauseAudio = function(){
-
+			_this.parent.audioSource.stopPlayStream();
+			_this.parent.audioSource.isPlaying = !_this.parent.audioSource.isPlaying;
 		}
 
 		this.segments = 64;
@@ -115,7 +119,20 @@ var Data = function( parent ){
 	Matter.Body.setStatic(this.substrateAnchor, true );
 	Matter.World.add(engine.world, Matter.Constraint.create({bodyA: this.substrateParticle, pointA: { x: 0, y: 0 }, bodyB: this.substrateAnchor, pointB: { x: 0, y: 0 }, stiffness: .05, render: { strokeWidth : .01, strokeStyle:'#00ffff'}}));
 
-	Matter.World.add( engine.world, [ this.substrateParticle, this.substrateAnchor ] );
+
+	this.stack = Matter.Composite.create();
+	this.fixed = Matter.Composite.create();
+	for (var i = 0; i < 128; i++) {
+		Matter.Composite.add( this.fixed, Matter.Bodies.circle( this.parent.containerEl.offsetWidth * i / 128, this.parent.containerEl.offsetHeight / 2, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}}));
+		Matter.Composite.add( this.stack, Matter.Bodies.circle( this.parent.containerEl.offsetWidth * i / 128, this.parent.containerEl.offsetHeight / 2, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}}));
+	};
+
+	for ( var i = 0; i < 128; i ++ ) {
+		Matter.World.add(engine.world, Matter.Constraint.create({bodyA: this.fixed.bodies[i], pointA: { x: 0, y: 0 }, bodyB: this.stack.bodies[i], pointB: { x: 0, y: 0 }, stiffness: .1, render: { strokeWidth : .01, strokeStyle:'#00ffff'}}));
+		Matter.Body.setStatic(this.fixed.bodies[i], true );
+	}
+
+	Matter.World.add( engine.world, [ this.substrateParticle, this.substrateAnchor, this.stack, this.fixed ] );
 	Matter.Engine.run(engine);
 	Matter.Render.run(render);
 
@@ -125,6 +142,16 @@ Data.prototype.step = function( time ){
 	
 	if( this.gui.light < 1 ) this.gui.light += this.lightInc;
 	else this.gui.light = 0;
+
+	this.parent.audioSource.sampleAudioStream();
+	
+
+
+	for( var i = 0 ; i < 128 ; i++ ){
+		Matter.Body.applyForce( this.stack.bodies[ i ], this.fixed.bodies[ i ].position, { x : 0 , y: -this.parent.audioSource.streamData[i] / 255 } );
+
+		this.audioData[i] = (this.fixed.bodies[ i ].position.y - this.stack.bodies[ i ].position.y) / 125
+	}
 
 	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.gui.substrate } );
 	if( this.gui.substrate > 0 ) this.gui.substrate -= 0.001;

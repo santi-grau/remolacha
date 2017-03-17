@@ -52,6 +52,7 @@ uniform float saturation;
 uniform float value;
 uniform float water;
 uniform float noise;
+uniform float audioData[128];
 
 attribute vec4 color;
 attribute float ids;
