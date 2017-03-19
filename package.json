@@ -17,6 +17,7 @@
   "author": "lct",
   "license": "MIT",
   "dependencies": {
+    "body-parser": "^1.17.1",
     "browserify": "*",
     "browserify-middleware": "*",
     "chroma-js": "^1.2.2",

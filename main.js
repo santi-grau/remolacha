@@ -12,6 +12,7 @@ var stringify = require('stringify');
 var figlet = require('figlet');
 var express = require("express");
 var stylus = require('stylus');
+var bodyParser = require('body-parser');
 var nib = require('nib');
 var fs = require('fs');
 var pckg = require('./package.json');
@@ -41,6 +42,8 @@ app.use('/*.css', function(req, res){
 	res.set('Content-Type', 'text/css').send( stylus.render( fs.readFileSync(__dirname + '/app/css/' + file + '.styl', 'utf-8') )); 
 });
 
+app.use(bodyParser.json());
+
 app.use(express.static(__dirname + '/app'));
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Routes
@@ -50,32 +53,21 @@ app.get('/', function(req, res){
 	res.render( 'main', {title: pckg.name});
 });
 
-app.get('/controls', function(req, res){
-	res.render( 'controls', {title: pckg.name});
+app.post('/api', function (req, res, next) {
+	wss.clients.forEach(function each(client) {
+		client.send(JSON.stringify(req.body));
+	});
+	res.json('ok');
 });
-
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Init!!
 // └────────────────────────────────────────────────────────────────────┘
-// app.listen(port);
 
 var server = http.createServer(app);
 var wss = new WebSocketServer({ server });
 
-
-
 server.listen(port);
-// var wss = new WebSocketServer({server: app});
-
-
-wss.on("connection", function(ws) {
-	ws.on('message', function(data) {
-		wss.clients.forEach(function each(client) {
-			client.send(data);
-		});
-	});
-})
 
 figlet.fonts(function(err, fonts) {
 	var font = fonts[Math.floor(Math.random() * fonts.length)];

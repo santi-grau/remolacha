@@ -101,7 +101,7 @@ var Data = function( parent ){
 	var engine = Matter.Engine.create();
 	engine.world.gravity.y = 0;
 
-	var render = Matter.Render.create({
+	/*var render = Matter.Render.create({
 		element: document.getElementById('renderer'),
 		engine: engine,
 		options : {
@@ -112,7 +112,7 @@ var Data = function( parent ){
 			width : this.parent.containerEl.offsetWidth,
 			height : this.parent.containerEl.offsetHeight
 		}
-	});
+	});*/
 
 	this.substrateParticle = Matter.Bodies.circle( this.parent.containerEl.offsetWidth / 2, this.parent.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
 	this.substrateAnchor = Matter.Bodies.circle( this.parent.containerEl.offsetWidth / 2, this.parent.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
@@ -134,7 +134,7 @@ var Data = function( parent ){
 
 	Matter.World.add( engine.world, [ this.substrateParticle, this.substrateAnchor, this.stack, this.fixed ] );
 	Matter.Engine.run(engine);
-	Matter.Render.run(render);
+	//Matter.Render.run(render);
 
 }
 

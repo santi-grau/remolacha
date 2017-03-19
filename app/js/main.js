@@ -58,6 +58,7 @@ var App = function() {
 	this.audioSource = new SoundCloudAudioSource('player','media/track' + Math.floor( Math.random() * 2 + 1 ) + '.mp3');
 
 	ws.onmessage = function (event) {
+		console.log(event.data)
 		var data = JSON.parse( event.data );
 		if( data.action == 'light' ) {
 			if( !_this.data.lightIsOn ){

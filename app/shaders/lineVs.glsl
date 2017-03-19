@@ -1,6 +1,24 @@
-#ifdef GL_ES
-	precision highp float;
-#endif
+varying vec4 vColor;
+
+attribute vec4 color;
+attribute float ids;
+attribute float iids;
+
+uniform vec3 pos0[131];
+uniform vec3 pos1[131];
+uniform vec3 pos2[131];
+
+uniform float substrate;
+uniform float totalCircles;
+uniform float ringRadius;
+uniform float light;
+uniform float saturation;
+uniform float value;
+uniform float water;
+uniform float noise;
+uniform float audioData[128];
+
+
 
 #define M_PI 3.1415926535897932384626433832795
 
@@ -36,27 +54,7 @@ float snoise(vec2 v) {
 	return 130.0 * dot(m, g);
 }
 
-varying vec4 vColor;
 
-uniform vec3 pos0[131];
-uniform vec3 pos1[131];
-uniform vec3 pos2[131];
-uniform vec3 pos3[131];
-
-uniform float scale;
-
-uniform float totalCircles;
-uniform float ringRadius;
-uniform float light;
-uniform float saturation;
-uniform float value;
-uniform float water;
-uniform float noise;
-uniform float audioData[128];
-
-attribute vec4 color;
-attribute float ids;
-attribute float iids;
 
 vec3 hsv2rgb( vec3 c ) {
 	vec4 K = vec4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );
@@ -74,22 +72,20 @@ void main() {
 	else vColor.rgb = hsv2rgb( vec3( light + ( totalCircles - ids ) / totalCircles / 2.0 , saturation, value ) );
 	vColor.a = color.a;
 
-	
-	if( ids < totalCircles / 3.3 ){
-		interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;
-	} else if( ids >= totalCircles / 3.3 && ids < totalCircles / 6.6 ) {
-		interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * ids / totalCircles;
+	//interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / totalCircles;
+	if( ids < totalCircles * 0.33 ){
+		interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (totalCircles * 0.33);
+	} else if( ids >= totalCircles * 0.33 && ids < totalCircles * 0.66 ) {
+		interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (totalCircles * 0.33)) / (totalCircles * 0.33);
 	} else {
-		interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * ids / totalCircles;
+		interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (totalCircles * 0.66)) / (totalCircles * 0.33);
 	}
 
-	float idFloat = ids / totalCircles * 64.0;
-	//float springStrength = springVerts[int(idFloat)];
-
 	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), 0.0 );
-
-	fPos = interpolate + translate;
-	//fPos = interpolate * scale * ( snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) );
+	
+	//float waterDisplacement = ( snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) );
+	fPos = translate + interpolate * substrate;
+	//fPos = interpolate * substrate * ( snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 400.0 + noise, translate.y / 400.0 ) );
 	
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );
 }

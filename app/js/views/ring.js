@@ -15,7 +15,7 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 	this.noiseInc = 0;
 	this.noiseStep = 0.01;
 
-	for( var i = 0 ; i < 7 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
+	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
 
 	var position = [];
 	var ids = [];
@@ -39,15 +39,13 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
 			time: { value : 1.0 },
-			gens : { value : [] },
 			pos0 : { value : [] },
 			pos1 : { value : [] },
 			pos2 : { value : [] },
-			pos3 : { value : [] },
 			light : { value : this.parent.data.gui.light },
 			water : { value : this.parent.data.gui.water },
 			colors : { value : [0,0,0,0,0,0,0,0,0,0,0,0] },
-			scale : { value : 1 },
+			substrate : { value : 1 },
 			saturation : { value : this.parent.data.gui.colorSaturation },
 			value : { value : this.parent.data.gui.colorValue },
 			noise : { value : this.noiseInc },
@@ -107,11 +105,12 @@ Ring.prototype.updateColors = function( ){
 Ring.prototype.step = function(time){
 	
 	this.timeStep += this.speed;
-	this.noiseInc += this.noiseStep;
+	this.noiseInc += this.parent.data.gui.water / 100;
 
-	this.mesh.material.uniforms.scale.value = 0.5 + this.parent.data.substrate;
+	this.mesh.material.uniforms.substrate.value = 0.5 + this.parent.data.substrate;
 	this.mesh.material.uniforms.light.value = this.parent.data.gui.light;
 	this.mesh.material.uniforms.water.value = this.parent.data.gui.water;
+
 	this.mesh.material.uniforms.noise.value = this.noiseInc;
 
 	this.mesh.material.uniforms.audioData.value = this.parent.data.audioData;
@@ -122,11 +121,11 @@ Ring.prototype.step = function(time){
 			var p = [ Math.cos( Math.PI * 2 * i / ( this.parent.data.gui.segments ) ), Math.sin( Math.PI * 2 * i / ( this.parent.data.gui.segments ) ) ];
 
 			if( i == 0 ){
-				var n = this.generators[0].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.gui.idleIntensity * this.segmentRadius / 5;
+				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.gui.idleIntensity * this.segmentRadius / 5;
 				pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
 			}
 
-			var n = this.generators[0].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.gui.idleIntensity * this.segmentRadius / 5;
+			var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.gui.idleIntensity * this.segmentRadius / 5;
 			pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
 
 			if( i == this.parent.data.gui.segments - 1 ){
@@ -134,7 +133,7 @@ Ring.prototype.step = function(time){
 			}
 
 			if( i == 0 ){
-				var n = this.generators[0].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.gui.idleIntensity * this.segmentRadius / 5;
+				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.gui.idleIntensity * this.segmentRadius / 5;
 				zeropos = [ p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 ];
 			}
 		}
