@@ -10,6 +10,7 @@ var Data = function( parent ){
 
 	this.audioData = [];
 
+	this.idleIntensity = 0.5;
 
 	this.substrate = 0;
 	this.light = 0;
@@ -20,6 +21,12 @@ var Data = function( parent ){
 
 	this.waterIsOn = false;
 
+	this.segments = 64;
+	this.rings = 512;
+
+	this.waterIntensity = 0.2;
+	this.waterPhase = 300;
+
 	var GuiParameters = function() {
 		this.water = 0;
 		this.light = Math.random();
@@ -27,12 +34,12 @@ var Data = function( parent ){
 			if( !_this.waterIsOn ){
 				TweenMax.to( this, 0.5, { water : 1 });
 				_this.waterInterval = setInterval(function(){
-					TweenMax.to( this, 0.5, { water : 0 });
+					TweenMax.to( this, 2.5, { water : 0, ease: Power3.easeOut });
 					_this.waterIsOn = false;
 				}.bind(this), 5000);
 			} else {
 				clearInterval( _this.waterInterval );
-				TweenMax.to( this, 0.5, { water : 0 });
+				TweenMax.to( this, 2.5, { water : 0, ease: Power3.easeOut });
 			}
 			
 			_this.waterIsOn = !_this.waterIsOn;
@@ -62,14 +69,6 @@ var Data = function( parent ){
 			_this.parent.audioSource.stopPlayStream();
 			_this.parent.audioSource.isPlaying = !_this.parent.audioSource.isPlaying;
 		}
-
-		this.segments = 64;
-		this.rings = 512;
-		this.generators = 3;
-		this.idleIntensity = 0.5;
-
-		this.colorSaturation = 0.9;
-		this.colorValue = 0.7;
 	};
 
 	this.gui = new GuiParameters();
@@ -77,7 +76,6 @@ var Data = function( parent ){
 	var gui = new Dat.GUI();
 
 	this.f1 = gui.addFolder('Main data');
-	this.f2 = gui.addFolder('Debug data');
 	
 	this.f1.add( this.gui, 'addWater' );
 	this.f1.add( this.gui, 'water', 0, 1 ).listen().onChange( function( value ){ this.parent.emitter.emit('water', value ); }.bind(this) );
@@ -87,21 +85,13 @@ var Data = function( parent ){
 	this.f1.add( this.gui, 'addSubstrate' );
 	this.f1.add( this.gui, 'substrate', 0.0, 1.0 ).listen().onChange( function( value ){ this.parent.emitter.emit('substrate', value ); }.bind(this) );
 	this.f1.add( this.gui, 'playPauseAudio');
-	
-	this.f2.add( this.gui, 'segments', [ 4, 8, 16, 32, 64, 128 ] ).onChange( function( value ){ this.parent.emitter.emit('segments', value ); }.bind(this) );
-	this.f2.add( this.gui, 'rings', [ 64, 128, 256, 512, 1024 ] ).onChange( function( value ){ this.parent.emitter.emit('rings', value ); }.bind(this) );
-	this.f2.add( this.gui, 'idleIntensity', 0, 1 ).onChange( function( value ){ this.parent.emitter.emit('idleIntensity', value ); }.bind(this) );
-
-	this.f2.add( this.gui, 'colorSaturation', 0, 1 ).onChange( function( value ){ this.parent.emitter.emit('saturation', value ); }.bind(this) );
-	this.f2.add( this.gui, 'colorValue', 0, 1 ).onChange( function( value ){ this.parent.emitter.emit('value', value ); }.bind(this) );
 
 	this.f1.open();
-	this.f2.open();
 
 	var engine = Matter.Engine.create();
 	engine.world.gravity.y = 0;
 
-	/*var render = Matter.Render.create({
+	var render = Matter.Render.create({
 		element: document.getElementById('renderer'),
 		engine: engine,
 		options : {
@@ -112,7 +102,7 @@ var Data = function( parent ){
 			width : this.parent.containerEl.offsetWidth,
 			height : this.parent.containerEl.offsetHeight
 		}
-	});*/
+	});
 
 	this.substrateParticle = Matter.Bodies.circle( this.parent.containerEl.offsetWidth / 2, this.parent.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
 	this.substrateAnchor = Matter.Bodies.circle( this.parent.containerEl.offsetWidth / 2, this.parent.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
@@ -134,7 +124,7 @@ var Data = function( parent ){
 
 	Matter.World.add( engine.world, [ this.substrateParticle, this.substrateAnchor, this.stack, this.fixed ] );
 	Matter.Engine.run(engine);
-	//Matter.Render.run(render);
+	Matter.Render.run(render);
 
 }
 

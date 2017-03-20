@@ -20,7 +20,6 @@
     "body-parser": "^1.17.1",
     "browserify": "*",
     "browserify-middleware": "*",
-    "chroma-js": "^1.2.2",
     "dat-gui": "^0.5.0",
     "express": "*",
     "figlet": "*",
@@ -32,7 +31,6 @@
     "stringify": "*",
     "stylus": "*",
     "three": "^0.84.0",
-    "three-orbit-controls": "^82.1.0",
     "ws": "1.1.0"
   },
   "devDependencies": {
