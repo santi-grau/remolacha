@@ -19,6 +19,7 @@ var pckg = require('./package.json');
 var jade = require('jade');
 var http = require("http");
 var WebSocketServer = require('ws').Server;
+var cors = require('cors')
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Initialize vars + constants
@@ -42,6 +43,7 @@ app.use('/*.css', function(req, res){
 	res.set('Content-Type', 'text/css').send( stylus.render( fs.readFileSync(__dirname + '/app/css/' + file + '.styl', 'utf-8') )); 
 });
 
+app.use(cors());
 app.use(bodyParser.json());
 
 app.use(express.static(__dirname + '/app'));
