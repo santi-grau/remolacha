@@ -28,6 +28,8 @@ var Data = function( parent ){
 	this.waterPhase = 300;
 
 	var GuiParameters = function() {
+		this.temperature = 0;
+		this.soil = 0;
 		this.water = 0;
 		this.light = Math.random();
 		this.addWater = function(){
@@ -77,6 +79,8 @@ var Data = function( parent ){
 
 	this.f1 = gui.addFolder('Main data');
 	
+	this.f1.add( this.gui, 'temperature', 0, 100 );
+	this.f1.add( this.gui, 'soil', 0, 100 );
 	this.f1.add( this.gui, 'addWater' );
 	this.f1.add( this.gui, 'water', 0, 1 ).listen().onChange( function( value ){ this.parent.emitter.emit('water', value ); }.bind(this) );
 	this.f1.add( this.gui, 'switchLight' );

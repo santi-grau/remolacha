@@ -35,7 +35,8 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
-			time: { value : 1.0 },
+			temperature : { value : this.parent.data.gui.temperature  },
+			soil : { value : this.parent.data.gui.soil  },
 			pos0 : { value : [] },
 			pos1 : { value : [] },
 			pos2 : { value : [] },
@@ -88,6 +89,8 @@ Ring.prototype.step = function(time){
 	this.mesh.material.uniforms.audioData.value = this.parent.data.audioData;
 	this.mesh.material.uniforms.time.value += 0.11;
 
+	this.mesh.material.uniforms.temperature.value = this.parent.data.gui.temperature / 50 - 1;
+	this.mesh.material.uniforms.soil.value = this.parent.data.gui.soil / 50 - 1;
 
 	for( var j = 0 ; j < 3 ; j++ ){
 		var pos = [], zeropos = [];
