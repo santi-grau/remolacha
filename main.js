@@ -19,7 +19,7 @@ var pckg = require('./package.json');
 var jade = require('jade');
 var http = require("http");
 var WebSocketServer = require('ws').Server;
-var cors = require('cors')
+var cors = require('cors');
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Initialize vars + constants
