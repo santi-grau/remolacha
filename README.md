@@ -26,8 +26,9 @@ Should be ready on port 5000
 15. "API"
 16. Performance
 17. Add measurements ( air moisture, land moisture, temperature)
-18. Interpolation ring n to ring  creates artifacts sometimes
+18. Interpolation ring n to ring  creates artifacts sometimes - OK
 19. Responsive
 20. Devices
 21. Replace matter for something more lightweight and performant
-22. Plugin music
+22. Plugin music - OK
+23. SVG exporter

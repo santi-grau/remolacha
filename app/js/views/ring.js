@@ -46,7 +46,8 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 			waterPhase : { value : this.parent.data.waterPhase },
 			ringRadius : { value : this.ringRadius },
 			audioData : { value :[] },
-			totalCircles : { value : this.parent.data.rings }
+			totalCircles : { value : this.parent.data.rings },
+			time : { value : 0 }
 		},
 		transparent : true,
 		vertexShader: lineVs,
@@ -85,6 +86,8 @@ Ring.prototype.step = function(time){
 	this.mesh.material.uniforms.waterPhase.value = 300 + 100 * this.parent.data.gui.water;
 
 	this.mesh.material.uniforms.audioData.value = this.parent.data.audioData;
+	this.mesh.material.uniforms.time.value += 0.11;
+
 
 	for( var j = 0 ; j < 3 ; j++ ){
 		var pos = [], zeropos = [];

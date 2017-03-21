@@ -11,6 +11,7 @@ uniform vec3 pos2[131];
 uniform float substrate;
 uniform float totalCircles;
 uniform float ringRadius;
+uniform float time;
 uniform float light;
 uniform float waterStep;
 uniform float waterIntensity;
@@ -85,11 +86,9 @@ void main() {
 	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), 0.0 );
 
 	//audio
-	float val0 = audioData[ int( 128.0 * ids / ( totalCircles / 2.0) ) ] / 10.0;
-	float val1 = audioData[ int( 128.0 * (ids + 1.0) / ( totalCircles / 2.0) ) ] / 10.0;
-	
-	//if( ids < totalCircles / 2.0 ) translate *= 1.0 + val0 + ( val1 - val0 ) * mod( ids, 128.0 ) ;
-	
+	translate.x *= 1.0 + audioData[2] / 5.0 ;
+	translate.y *= 1.0 + audioData[12] / 5.0 ;
+	translate *= 1.0 + cos( time + M_PI * 24.0 * ids / ( totalCircles - 1.0 ) ) * 0.03 *  audioData[8];
 
 	// water
 	interpolate *= snoise( vec2( translate/ waterPhase ) + vec2( waterStep, 0.0 ) ) * waterIntensity + 1.0 ;

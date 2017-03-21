@@ -135,13 +135,13 @@ Data.prototype.step = function( time ){
 
 	this.parent.audioSource.sampleAudioStream();
 	
-
-
 	for( var i = 0 ; i < 128 ; i++ ){
 		Matter.Body.applyForce( this.stack.bodies[ i ], this.fixed.bodies[ i ].position, { x : 0 , y: -this.parent.audioSource.streamData[i] / 255 } );
 
 		this.audioData[i] = (this.fixed.bodies[ i ].position.y - this.stack.bodies[ i ].position.y) / 125
 	}
+
+	this.idleIntensity =  0.3 + this.audioData[4] * 0.7;
 
 	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.gui.substrate } );
 	if( this.gui.substrate > 0 ) this.gui.substrate -= 0.001;
