@@ -37,6 +37,7 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 		uniforms: {
 			temperature : { value : this.parent.data.gui.temperature  },
 			soil : { value : this.parent.data.gui.soil  },
+			air : { value : this.parent.data.gui.air  },
 			pos0 : { value : [] },
 			pos1 : { value : [] },
 			pos2 : { value : [] },
@@ -91,6 +92,7 @@ Ring.prototype.step = function(time){
 
 	this.mesh.material.uniforms.temperature.value = this.parent.data.gui.temperature / 50 - 1;
 	this.mesh.material.uniforms.soil.value = this.parent.data.gui.soil / 50 - 1;
+	this.mesh.material.uniforms.air.value = this.parent.data.gui.air / 50 - 1;
 
 	for( var j = 0 ; j < 3 ; j++ ){
 		var pos = [], zeropos = [];
