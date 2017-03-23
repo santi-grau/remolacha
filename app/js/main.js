@@ -42,6 +42,8 @@ var SoundCloudAudioSource = function(audioElement, audioFile) {
     	if(!this.isPlaying) player.play();
         else player.pause();
     }
+
+
 };
 
 
@@ -102,6 +104,16 @@ var App = function() {
 	window.onresize = this.onResize.bind( this );
 
 	this.onResize();
+
+	// var dataJSON = {
+	// 	temperature : 30,
+	// 	air : 60,
+	// 	soil : 40,
+	// 	water : false,
+	// 	light : false,
+	// 	substrate : true
+	// };
+	// this.data.update( JSON.stringify(dataJSON) );
 
 	this.step();
 }

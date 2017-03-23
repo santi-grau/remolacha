@@ -2,6 +2,8 @@ var Dat = require('dat-gui');
 var Matter = require('matter-js');
 var TweenMax = require('gsap');
 
+
+
 var Data = function( parent ){
 	var _this = this;
 	this.parent = parent;
@@ -80,9 +82,9 @@ var Data = function( parent ){
 
 	this.f1 = gui.addFolder('Main data');
 	
-	this.f1.add( this.gui, 'temperature', 0, 100 );
-	this.f1.add( this.gui, 'soil', 0, 100 );
-	this.f1.add( this.gui, 'air', 0, 100 );
+	this.f1.add( this.gui, 'temperature', 0, 100 ).listen();
+	this.f1.add( this.gui, 'soil', 0, 100 ).listen();
+	this.f1.add( this.gui, 'air', 0, 100 ).listen();
 	this.f1.add( this.gui, 'addWater' );
 	this.f1.add( this.gui, 'water', 0, 1 ).listen().onChange( function( value ){ this.parent.emitter.emit('water', value ); }.bind(this) );
 	this.f1.add( this.gui, 'switchLight' );
@@ -132,6 +134,66 @@ var Data = function( parent ){
 	Matter.Engine.run(engine);
 	Matter.Render.run(render);
 
+}
+
+Data.prototype.update = function( data ){
+	var _this = this;
+	var param = JSON.parse( data );
+	console.log(param)
+	for( key in param ){
+		if( key == 'temperature' ) this.gui.temperature = param[key];
+		if( key == 'air' ) this.gui.air = param[key];
+		if( key == 'soil' ) this.gui.soil = param[key];
+
+		if( key == 'water'  ) {
+			if( param[key] ){
+				TweenMax.to( this.gui, 0.5, { water : 1 });
+				_this.waterInterval = setInterval(function(){
+					TweenMax.to( this.gui, 2.5, { water : 0, ease: Power3.easeOut });
+					_this.waterIsOn = false;
+				}.bind(this), 5000);
+			} else {
+				clearInterval( _this.waterInterval );
+				TweenMax.to( this.gui, 2.5, { water : 0, ease: Power3.easeOut });
+			}
+			_this.waterIsOn = !_this.waterIsOn;
+		}
+
+		if( key == 'light'  ) {
+			if( param[key] ){
+				TweenMax.to( _this, 0.5, { lightInc : 0.005 });
+				_this.lightInterval = setInterval(function(){
+					TweenMax.to( _this, 0.5, { lightInc : 0.0001 });
+				}, 5000);
+			} else {
+				clearInterval( _this.lightInterval );
+				TweenMax.to( _this, 0.5, { lightInc : 0.0001 });
+			}
+			_this.lightIsOn = !_this.lightIsOn;
+		}
+
+
+		if( key == 'substrate'  ) {
+			if( this.gui.substrate < 0.1 ) this.gui.substrate = 0.25;
+			else if( this.gui.substrate > 0 && this.gui.substrate < 0.25 ) this.gui.substrate = 0.5;
+			else if( this.gui.substrate >= 0.25 && this.gui.substrate < 0.5 ) this.gui.substrate = 0.75;
+			else this.gui.substrate = 1;
+
+		}
+
+		if( key == 'audio'  ) {
+			if( param[key] ){
+				_this.parent.audioSource.isPlaying = false;
+				_this.parent.audioSource.stopPlayStream();
+				_this.parent.audioSource.isPlaying = true;
+				
+			} else {
+				_this.parent.audioSource.isPlaying = true;
+				_this.parent.audioSource.stopPlayStream();
+				_this.parent.audioSource.isPlaying = false;
+			}
+		}
+	}
 }
 
 Data.prototype.step = function( time ){
