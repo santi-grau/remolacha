@@ -3,6 +3,8 @@ var lineFs = require('./../../shaders/lineFs.glsl');
 
 var SimplexNoise = require('simplex-noise');
 
+var Work = require('webworkify');
+
 var Ring = function( parent, segmentRadius, ringRadius ){
 	this.parent = parent;
  	this.speed = 0.01;
@@ -60,6 +62,9 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 
 	this.updateColors( );
 
+	this.parent.emitter.on('export', function( value ) {
+		this.export();
+	}.bind(this));
 }
 	
 Ring.prototype.updateColors = function( ){
@@ -74,6 +79,18 @@ Ring.prototype.updateColors = function( ){
 	this.mesh.geometry.attributes.color.array = new Float32Array( color );
 	this.mesh.geometry.attributes.color.needsUpdate = true;
 }
+
+Ring.prototype.export = function( ) {
+	var w = Work( require('./export.js') );
+	
+	w.addEventListener('message', function (ev) {
+		console.log(ev.data);
+	});
+	
+	console.log(  );
+
+	w.postMessage( JSON.stringify( this.mesh.material.uniforms ) );
+};
 
 Ring.prototype.step = function(time){
 	

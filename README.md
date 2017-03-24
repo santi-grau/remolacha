@@ -23,13 +23,13 @@ Should be ready on port 5000
 12. Water - OK
 13. Connect substrate - OK
 14. Cleanup - OK
-15. "API"
+15. "API" -OK
 16. Performance
-17. Add measurements ( air moisture, land moisture, temperature)
+17. Add measurements ( air moisture, land moisture, temperature) - OK
 18. Interpolation ring n to ring  creates artifacts sometimes - OK
 19. Responsive
 20. Devices
 21. Replace matter for something more lightweight and performant
 22. Plugin music - OK
 23. SVG exporter
-24. BIg cleanup
+24. Big cleanup

@@ -70,6 +70,10 @@ var Data = function( parent ){
 		}
 		this.substrate = 0.0;
 
+		this.export = function(){
+			_this.parent.emitter.emit('export', true );
+		}
+
 		this.playPauseAudio = function(){
 			_this.parent.audioSource.stopPlayStream();
 			_this.parent.audioSource.isPlaying = !_this.parent.audioSource.isPlaying;
@@ -93,6 +97,8 @@ var Data = function( parent ){
 	this.f1.add( this.gui, 'addSubstrate' );
 	this.f1.add( this.gui, 'substrate', 0.0, 1.0 ).listen().onChange( function( value ){ this.parent.emitter.emit('substrate', value ); }.bind(this) );
 	this.f1.add( this.gui, 'playPauseAudio');
+
+	this.f1.add( this.gui, 'export');
 
 	this.f1.open();
 

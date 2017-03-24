@@ -58,31 +58,7 @@ var App = function() {
 	this.audioSource = new SoundCloudAudioSource('player','media/track' + Math.floor( Math.random() * 2 + 1 ) + '.mp3');
 
 	ws.onmessage = function (event) {
-		console.log(event.data)
-		var data = JSON.parse( event.data );
-		if( data.action == 'light' ) {
-			if( !_this.data.lightIsOn ){
-				_this.data.lightInc = 0.01;
-				_this.data.lightInterval = setInterval(function(){
-					_this.data.lightInc = 0.0001;
-				}, 5000);
-			} else {
-				clearInterval( _this.data.lightInterval );
-				_this.data.lightInc = 0.0001;
-			}
-			_this.data.lightIsOn = !_this.data.lightIsOn;
-		}
-
-		if( data.action == 'substrate' ) {
-			if( _this.data.gui.substrate < 0.1 ) _this.data.gui.substrate = 0.25;
-			else if( _this.data.gui.substrate > 0 && _this.data.gui.substrate < 0.25 ) _this.data.gui.substrate = 0.5;
-			else if( _this.data.gui.substrate >= 0.25 && _this.data.gui.substrate < 0.5 ) _this.data.gui.substrate = 0.75;
-			else _this.data.gui.substrate = 1;
-		}
-
-		if( data.action == 'water' ) {
-			TweenMax.to( _this.data.gui, 0.2, { water : 1 });
-		}
+		this.data.update( JSON.stringify(event.data) );
 	};
 
 	this.emitter = new EventEmitter();
