@@ -59,7 +59,7 @@ var App = function() {
 	this.audioSource = new SoundCloudAudioSource('player','media/track' + Math.floor( Math.random() * 2 + 1 ) + '.mp3');
 
 	ws.onmessage = function (event) {
-		this.data.update( JSON.stringify(event.data) );
+		_this.data.update( JSON.stringify(event.data) );
 	};
 
 	this.emitter = new EventEmitter();
