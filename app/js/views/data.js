@@ -144,8 +144,8 @@ var Data = function( parent ){
 
 Data.prototype.update = function( data ){
 	var _this = this;
-	var param = JSON.parse( data );
-	console.log(param)
+	var param = data;
+	// console.log(param)
 	for( key in param ){
 		if( key == 'temperature' ) this.gui.temperature = param[key];
 		if( key == 'air' ) this.gui.air = param[key];
