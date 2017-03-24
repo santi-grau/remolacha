@@ -59,31 +59,7 @@ var App = function() {
 	this.audioSource = new SoundCloudAudioSource('player','media/track' + Math.floor( Math.random() * 2 + 1 ) + '.mp3');
 
 	ws.onmessage = function (event) {
-		console.log(event.data)
-		var data = JSON.parse( event.data );
-		if( data.action == 'light' ) {
-			if( !_this.data.lightIsOn ){
-				_this.data.lightInc = 0.01;
-				_this.data.lightInterval = setInterval(function(){
-					_this.data.lightInc = 0.0001;
-				}, 5000);
-			} else {
-				clearInterval( _this.data.lightInterval );
-				_this.data.lightInc = 0.0001;
-			}
-			_this.data.lightIsOn = !_this.data.lightIsOn;
-		}
-
-		if( data.action == 'substrate' ) {
-			if( _this.data.gui.substrate < 0.1 ) _this.data.gui.substrate = 0.25;
-			else if( _this.data.gui.substrate > 0 && _this.data.gui.substrate < 0.25 ) _this.data.gui.substrate = 0.5;
-			else if( _this.data.gui.substrate >= 0.25 && _this.data.gui.substrate < 0.5 ) _this.data.gui.substrate = 0.75;
-			else _this.data.gui.substrate = 1;
-		}
-
-		if( data.action == 'water' ) {
-			TweenMax.to( _this.data.gui, 0.2, { water : 1 });
-		}
+		this.data.update( JSON.stringify(event.data) );
 	};
 
 	this.emitter = new EventEmitter();
@@ -136,7 +112,7 @@ App.prototype.step = function( time ) {
 };
 
 var app = new App();
-},{"./views/data":2,"./views/ring":3,"events":9,"gsap":10,"three":13}],2:[function(require,module,exports){
+},{"./views/data":2,"./views/ring":4,"events":10,"gsap":11,"three":14}],2:[function(require,module,exports){
 var Dat = require('dat-gui');
 var Matter = require('matter-js');
 var TweenMax = require('gsap');
@@ -209,6 +185,10 @@ var Data = function( parent ){
 		}
 		this.substrate = 0.0;
 
+		this.export = function(){
+			_this.parent.emitter.emit('export', true );
+		}
+
 		this.playPauseAudio = function(){
 			_this.parent.audioSource.stopPlayStream();
 			_this.parent.audioSource.isPlaying = !_this.parent.audioSource.isPlaying;
@@ -232,6 +212,8 @@ var Data = function( parent ){
 	this.f1.add( this.gui, 'addSubstrate' );
 	this.f1.add( this.gui, 'substrate', 0.0, 1.0 ).listen().onChange( function( value ){ this.parent.emitter.emit('substrate', value ); }.bind(this) );
 	this.f1.add( this.gui, 'playPauseAudio');
+
+	this.f1.add( this.gui, 'export');
 
 	this.f1.open();
 
@@ -356,11 +338,22 @@ Data.prototype.step = function( time ){
 }
 
 module.exports = Data;
-},{"dat-gui":6,"gsap":10,"matter-js":11}],3:[function(require,module,exports){
+},{"dat-gui":7,"gsap":11,"matter-js":12}],3:[function(require,module,exports){
+var Export = function( ){
+	self.addEventListener('message',function (ev){
+		var data = JSON.parse(ev.data);
+		self.postMessage(data.temperature.value);
+    });
+}
+
+module.exports = Export;
+},{}],4:[function(require,module,exports){
 var lineVs = require('./../../shaders/lineVs.glsl');
 var lineFs = require('./../../shaders/lineFs.glsl');
 
 var SimplexNoise = require('simplex-noise');
+
+var Work = require('webworkify');
 
 var Ring = function( parent, segmentRadius, ringRadius ){
 	this.parent = parent;
@@ -419,6 +412,9 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 
 	this.updateColors( );
 
+	this.parent.emitter.on('export', function( value ) {
+		this.export();
+	}.bind(this));
 }
 	
 Ring.prototype.updateColors = function( ){
@@ -433,6 +429,18 @@ Ring.prototype.updateColors = function( ){
 	this.mesh.geometry.attributes.color.array = new Float32Array( color );
 	this.mesh.geometry.attributes.color.needsUpdate = true;
 }
+
+Ring.prototype.export = function( ) {
+	var w = Work( require('./export.js') );
+	
+	w.addEventListener('message', function (ev) {
+		console.log(ev.data);
+	});
+	
+	console.log(  );
+
+	w.postMessage( JSON.stringify( this.mesh.material.uniforms ) );
+};
 
 Ring.prototype.step = function(time){
 	
@@ -482,16 +490,16 @@ Ring.prototype.step = function(time){
 }
 
 module.exports = Ring;
-},{"./../../shaders/lineFs.glsl":4,"./../../shaders/lineVs.glsl":5,"simplex-noise":12}],4:[function(require,module,exports){
+},{"./../../shaders/lineFs.glsl":5,"./../../shaders/lineVs.glsl":6,"./export.js":3,"simplex-noise":13,"webworkify":15}],5:[function(require,module,exports){
 module.exports = "varying vec4 vColor;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ fragment shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main( ){\n\tgl_FragColor = vColor;\n}";
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 module.exports = "varying vec4 vColor;\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nuniform vec3 pos0[131];\nuniform vec3 pos1[131];\nuniform vec3 pos2[131];\n\nuniform float substrate;\nuniform float temperature;\nuniform float soil;\nuniform float air;\nuniform float totalCircles;\nuniform float ringRadius;\nuniform float time;\nuniform float light;\nuniform float waterStep;\nuniform float waterIntensity;\nuniform float waterPhase;\nuniform float audioData[128];\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | ASHIMA NOISE\n// | Copyright (C) 2011 Ashima Arts. All rights reserved. \n// | Distributed under the MIT License.\n// └────────────────────────────────────────────────────────────────────┘\n#define M_PI 3.1415926535897932384626433832795\nvec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }\nfloat snoise(vec2 v) { \n\tconst vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);\n\tvec2 i = floor(v + dot(v, C.yy) );\n\tvec2 x0 = v - i + dot(i, C.xx);\n\tvec2 i1;\n\ti1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n\tvec4 x12 = x0.xyxy + C.xxzz;\n\tx12.xy -= i1;\n\ti = mod289(i);\n\tvec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));\n\tvec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n\tm = m*m ;\n\tm = m*m ;\n\tvec3 x = 2.0 * fract(p * C.www) - 1.0;\n\tvec3 h = abs(x) - 0.5;\n\tvec3 ox = floor(x + 0.5);\n\tvec3 a0 = x - ox;\n\tm *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\tvec3 g;\n\tg.x  = a0.x  * x0.x  + h.x  * x0.y;\n\tg.yz = a0.yz * x12.xz + h.yz * x12.yw;\n\treturn 130.0 * dot(m, g);\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | HSV2RGB https://github.com/hughsk/glsl-hsv2rgb\n// | No license found. \n// └────────────────────────────────────────────────────────────────────┘\nvec3 hsv2rgb( vec3 c ) {\n\tvec4 K = vec4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );\n\tvec3 p = abs( fract( c.xxx + K.xyz ) * 6.0 - K.www );\n\treturn c.z * mix( K.xxx, clamp( p - K.xxx, 0.0, 1.0 ), c.y );\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ vertex shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main() {\n\t\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\tfloat saturation = 0.9;\n\tfloat balance = 0.7;\n\n\t// vertex colors\n\tif( ids < totalCircles / 2.0 ) vColor.rgb = hsv2rgb( vec3( light + ids / totalCircles / 2.0 , saturation, balance ) );\n\telse vColor.rgb = hsv2rgb( vec3( light + ( totalCircles - ids ) / totalCircles / 2.0 , saturation, balance ) );\n\tvColor.a = color.a;\n\n\t// rings\n\tif( ids < totalCircles * 0.33 ) interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (totalCircles * 0.33);\n\telse if( ids >= totalCircles * 0.33 && ids < totalCircles * 0.66 ) interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (totalCircles * 0.33)) / (totalCircles * 0.33);\n\telse interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (totalCircles * 0.66)) / (totalCircles * 0.33);\n\n\t// ring positions\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), 0.0 );\n\n\t//audio\n\ttranslate.x *= 1.0 + audioData[2] / 5.0 ;\n\ttranslate.y *= 1.0 + audioData[12] / 5.0 ;\n\ttranslate *= 1.0 + cos( time + M_PI * 24.0 * ids / ( totalCircles - 1.0 ) ) * 0.03 *  audioData[8];\n\n\t//params\n\tif( ids /  totalCircles < 0.3333 ) translate.y *= 1.0 + sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * 0.2 * temperature;\n\tif( ids /  totalCircles > 0.3333 && ids /  totalCircles < 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * 0.2 * soil;\n\tif( ids /  totalCircles > 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * -0.2 * air;\n\n\t// water\n\tinterpolate *= snoise( vec2( translate/ waterPhase ) + vec2( waterStep, 0.0 ) ) * waterIntensity + 1.0 ;\n\t\n\t// substrate\n\tinterpolate *= substrate;\n\t\n\tfPos = translate + interpolate;\n\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 module.exports = require('./vendor/dat.gui')
 module.exports.color = require('./vendor/dat.color')
-},{"./vendor/dat.color":7,"./vendor/dat.gui":8}],7:[function(require,module,exports){
+},{"./vendor/dat.color":8,"./vendor/dat.gui":9}],8:[function(require,module,exports){
 /**
  * dat-gui JavaScript Controller Library
  * http://code.google.com/p/dat-gui
@@ -1247,7 +1255,7 @@ dat.color.math = (function () {
 })(),
 dat.color.toString,
 dat.utils.common);
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /**
  * dat-gui JavaScript Controller Library
  * http://code.google.com/p/dat-gui
@@ -4908,7 +4916,7 @@ dat.dom.CenteredDiv = (function (dom, common) {
 dat.utils.common),
 dat.dom.dom,
 dat.utils.common);
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5212,7 +5220,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 (function (global){
 /*!
  * VERSION: 1.19.1
@@ -13072,7 +13080,7 @@ if (_gsScope._gsDefine) { _gsScope._gsQueue.pop()(); } //necessary in case Tween
 
 })((typeof(module) !== "undefined" && module.exports && typeof(global) !== "undefined") ? global : this || window, "TweenMax");
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 (function (global){
 /**
 * matter-js 0.12.0 by @liabru 2017-02-02
@@ -23255,7 +23263,7 @@ var Vector = _dereq_('../geometry/Vector');
 },{"../body/Composite":2,"../core/Common":14,"../core/Events":16,"../geometry/Bounds":26,"../geometry/Vector":28}]},{},[30])(30)
 });
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /*
  * A fast javascript implementation of simplex noise by Jonas Wagner
  *
@@ -23673,7 +23681,7 @@ if (typeof module !== 'undefined') {
 
 })();
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -66974,5 +66982,88 @@ if (typeof module !== 'undefined') {
 	Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
+
+},{}],15:[function(require,module,exports){
+var bundleFn = arguments[3];
+var sources = arguments[4];
+var cache = arguments[5];
+
+var stringify = JSON.stringify;
+
+module.exports = function (fn, options) {
+    var wkey;
+    var cacheKeys = Object.keys(cache);
+
+    for (var i = 0, l = cacheKeys.length; i < l; i++) {
+        var key = cacheKeys[i];
+        var exp = cache[key].exports;
+        // Using babel as a transpiler to use esmodule, the export will always
+        // be an object with the default export as a property of it. To ensure
+        // the existing api and babel esmodule exports are both supported we
+        // check for both
+        if (exp === fn || exp && exp.default === fn) {
+            wkey = key;
+            break;
+        }
+    }
+
+    if (!wkey) {
+        wkey = Math.floor(Math.pow(16, 8) * Math.random()).toString(16);
+        var wcache = {};
+        for (var i = 0, l = cacheKeys.length; i < l; i++) {
+            var key = cacheKeys[i];
+            wcache[key] = key;
+        }
+        sources[wkey] = [
+            Function(['require','module','exports'], '(' + fn + ')(self)'),
+            wcache
+        ];
+    }
+    var skey = Math.floor(Math.pow(16, 8) * Math.random()).toString(16);
+
+    var scache = {}; scache[wkey] = wkey;
+    sources[skey] = [
+        Function(['require'], (
+            // try to call default if defined to also support babel esmodule
+            // exports
+            'var f = require(' + stringify(wkey) + ');' +
+            '(f.default ? f.default : f)(self);'
+        )),
+        scache
+    ];
+
+    var workerSources = {};
+    resolveSources(skey);
+
+    function resolveSources(key) {
+        workerSources[key] = true;
+
+        for (var depPath in sources[key][1]) {
+            var depKey = sources[key][1][depPath];
+            if (!workerSources[depKey]) {
+                resolveSources(depKey);
+            }
+        }
+    }
+
+    var src = '(' + bundleFn + ')({'
+        + Object.keys(workerSources).map(function (key) {
+            return stringify(key) + ':['
+                + sources[key][0]
+                + ',' + stringify(sources[key][1]) + ']'
+            ;
+        }).join(',')
+        + '},{},[' + stringify(skey) + '])'
+    ;
+
+    var URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
+
+    var blob = new Blob([src], { type: 'text/javascript' });
+    if (options && options.bare) { return blob; }
+    var workerUrl = URL.createObjectURL(blob);
+    var worker = new Worker(workerUrl);
+    worker.objectURL = workerUrl;
+    return worker;
+};
 
 },{}]},{},[1]);
