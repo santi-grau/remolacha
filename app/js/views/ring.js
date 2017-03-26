@@ -84,16 +84,32 @@ Ring.prototype.export = function( ) {
 	var w = Work( require('./export.js') );
 	
 	w.addEventListener('message', function (ev) {
-		console.log(ev.data);
-	});
+		var parser = new DOMParser();
+		var doc = parser.parseFromString(ev.data, "image/svg+xml");
+		this.parent.containerEl.appendChild(doc.childNodes[0]);
+
+		var source = ev.data;
+
+		var element = document.createElement('a');
+		element.setAttribute('href', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ev.data));
+		element.setAttribute('download', 'SVGexport');
+
+		element.style.display = 'none';
+		document.body.appendChild(element);
+
+		element.click();
+
+		document.body.removeChild(element);
+
+
+
+	}.bind(this));
 	
-	console.log(  );
 
 	w.postMessage( JSON.stringify( this.mesh.material.uniforms ) );
 };
 
 Ring.prototype.step = function(time){
-	
 	this.timeStep += this.speed;
 	this.waterStep += 0.001 + this.parent.data.gui.water / 100;
 

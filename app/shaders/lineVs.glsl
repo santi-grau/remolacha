@@ -4,9 +4,9 @@ attribute vec4 color;
 attribute float ids;
 attribute float iids;
 
-uniform vec3 pos0[131];
-uniform vec3 pos1[131];
-uniform vec3 pos2[131];
+uniform vec3 pos0[201];
+uniform vec3 pos1[201];
+uniform vec3 pos2[201];
 
 uniform float substrate;
 uniform float temperature;
@@ -91,7 +91,7 @@ void main() {
 	//audio
 	translate.x *= 1.0 + audioData[2] / 5.0 ;
 	translate.y *= 1.0 + audioData[12] / 5.0 ;
-	translate *= 1.0 + cos( time + M_PI * 24.0 * ids / ( totalCircles - 1.0 ) ) * 0.03 *  audioData[8];
+	translate *= 1.0 + cos( time + M_PI * 24.0 * ids / ( totalCircles - 1.0 ) ) * 0.1 *  audioData[8];
 
 	//params
 	if( ids /  totalCircles < 0.3333 ) translate.y *= 1.0 + sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * 0.2 * temperature;

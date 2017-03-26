@@ -24,7 +24,7 @@ var Data = function( parent ){
 	this.waterIsOn = false;
 
 	this.segments = 64;
-	this.rings = 512;
+	this.rings = 32;
 
 	this.waterIntensity = 0.2;
 	this.waterPhase = 300;
@@ -72,6 +72,10 @@ var Data = function( parent ){
 
 		this.export = function(){
 			_this.parent.emitter.emit('export', true );
+
+			//var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+			// _this.parent.containerEl.appendChild(doc);
 		}
 
 		this.playPauseAudio = function(){
