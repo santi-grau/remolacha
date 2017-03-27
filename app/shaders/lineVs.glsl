@@ -87,24 +87,31 @@ void main() {
 
 	// ring positions
 	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), 0.0 );
+	
 
 	//audio
 	translate.x *= 1.0 + audioData[2] / 5.0 ;
 	translate.y *= 1.0 + audioData[12] / 5.0 ;
-	translate *= 1.0 + cos( time + M_PI * 24.0 * ids / ( totalCircles - 1.0 ) ) * 0.1 *  audioData[8];
+	translate *= 1.0 + cos( time + M_PI * 12.0 * ids / ( totalCircles - 1.0 ) ) * 0.1 *  audioData[8];
 
 	//params
-	if( ids /  totalCircles < 0.3333 ) translate.y *= 1.0 + sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * 0.2 * temperature;
-	if( ids /  totalCircles > 0.3333 && ids /  totalCircles < 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * 0.2 * soil;
-	if( ids /  totalCircles > 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * -0.2 * air;
+	if( ids / totalCircles < 0.3333 ) translate.y *= 1.0 + sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * 0.2 * temperature;
+	if( ids / totalCircles > 0.3333 && ids /  totalCircles < 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * 0.2 * soil;
+	if( ids / totalCircles > 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * -0.2 * air;
 
 	// water
-	interpolate *= snoise( vec2( translate / waterPhase ) + vec2( waterStep, 0.0 ) ) * waterIntensity + 1.0 ;
-	
+	// interpolate *= snoise( vec2( translate / waterPhase ) + vec2( waterStep, 0.0 ) ) * waterIntensity + 1.0;
+
+	interpolate *= 1.0 + snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) ) * waterIntensity;
+	translate += translate * 0.1 * snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) ) * waterIntensity;
+
 	// substrate
 	interpolate *= substrate;
 	
 	fPos = translate + interpolate;
+
+	// float noise = 1.0;
+	// fPos = interpolate * substrate * ( snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) );
 
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );
 }

@@ -86,20 +86,20 @@ Ring.prototype.export = function( ) {
 	w.addEventListener('message', function (ev) {
 		var parser = new DOMParser();
 		var doc = parser.parseFromString(ev.data, "image/svg+xml");
-		this.parent.containerEl.appendChild(doc.childNodes[0]);
+		// this.parent.containerEl.appendChild(doc.childNodes[0]);
 
-		// var source = ev.data;
+		var source = ev.data;
 
-		// var element = document.createElement('a');
-		// element.setAttribute('href', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ev.data));
-		// element.setAttribute('download', 'SVGexport');
+		var element = document.createElement('a');
+		element.setAttribute('href', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ev.data));
+		element.setAttribute('download', 'SVGexport');
 
-		// element.style.display = 'none';
-		// document.body.appendChild(element);
+		element.style.display = 'none';
+		document.body.appendChild(element);
 
-		// element.click();
+		element.click();
 
-		// document.body.removeChild(element);
+		document.body.removeChild(element);
 
 	}.bind(this));
 	
@@ -114,7 +114,7 @@ Ring.prototype.step = function(time){
 	this.mesh.material.uniforms.substrate.value = 1 + this.parent.data.substrate;
 	this.mesh.material.uniforms.light.value = this.parent.data.gui.light;
 	this.mesh.material.uniforms.waterStep.value = this.waterStep;
-	this.mesh.material.uniforms.waterIntensity.value = 0.2 + 0.4 * this.parent.data.gui.water;
+	this.mesh.material.uniforms.waterIntensity.value = 0.1 + 0.9 * this.parent.data.gui.water;
 
 	this.mesh.material.uniforms.waterPhase.value = 300 + 100 * this.parent.data.gui.water;
 

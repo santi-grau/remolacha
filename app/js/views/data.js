@@ -24,9 +24,9 @@ var Data = function( parent ){
 	this.waterIsOn = false;
 
 	this.segments = 64;
-	this.rings = 32;
+	this.rings = 512;
 
-	this.waterIntensity = 0.2;
+	this.waterIntensity = 0.5;
 	this.waterPhase = 300;
 
 	var GuiParameters = function() {
