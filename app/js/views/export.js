@@ -42,11 +42,11 @@ var Export = function( ){
 				for( var j = 0 ; j < data.pos0.value.length ; j+=3 ){
 					if( j == 0 ){
 						var px = parseFloat( 400 + parseFloat( data.pos0.value[j] + ( data.pos1.value[j] - data.pos0.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) ) - Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+						var py = parseFloat( 400 + parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ px +' '+ py;
 					} else {
 						var px = parseFloat( 400 + parseFloat( data.pos0.value[j] + ( data.pos1.value[j] - data.pos0.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) ) - Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+						var py = parseFloat( 400 + parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 						svg += ' L'+ px +' '+ py ;
 					}
 				}
@@ -58,11 +58,11 @@ var Export = function( ){
 				for( var j = 0 ; j < data.pos1.value.length ; j+=3 ){
 					if( j == 0 ){
 						var px = parseFloat( 400 + parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) ) - Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+						var py = parseFloat( 400 + parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ px +' '+ py;
 					} else {
 						var px = parseFloat( 400 + parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) ) - Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+						var py = parseFloat( 400 + parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 						svg += ' L'+ px +' '+ py ;
 					}
 				}
@@ -74,11 +74,11 @@ var Export = function( ){
 				for( var j = 0 ; j < data.pos2.value.length ; j+=3 ){
 					if( j == 0 ){
 						var px = parseFloat( 400 + parseFloat( data.pos2.value[j] + ( data.pos0.value[j] - data.pos2.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) ) - Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+						var py = parseFloat( 400 + parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ px +' '+ py;
 					} else {
 						var px = parseFloat( 400 + parseFloat( data.pos2.value[j] + ( data.pos0.value[j] - data.pos2.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) ) - Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+						var py = parseFloat( 400 + parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 						svg += ' L'+ px +' '+ py ;
 					}
 				}

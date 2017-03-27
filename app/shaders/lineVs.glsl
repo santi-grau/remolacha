@@ -99,7 +99,7 @@ void main() {
 	if( ids /  totalCircles > 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * -0.2 * air;
 
 	// water
-	interpolate *= snoise( vec2( translate/ waterPhase ) + vec2( waterStep, 0.0 ) ) * waterIntensity + 1.0 ;
+	interpolate *= snoise( vec2( translate / waterPhase ) + vec2( waterStep, 0.0 ) ) * waterIntensity + 1.0 ;
 	
 	// substrate
 	interpolate *= substrate;

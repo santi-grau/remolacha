@@ -72,10 +72,6 @@ var Data = function( parent ){
 
 		this.export = function(){
 			_this.parent.emitter.emit('export', true );
-
-			//var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-
-			// _this.parent.containerEl.appendChild(doc);
 		}
 
 		this.playPauseAudio = function(){
@@ -181,13 +177,11 @@ Data.prototype.update = function( data ){
 			_this.lightIsOn = !_this.lightIsOn;
 		}
 
-
 		if( key == 'substrate'  ) {
 			if( this.gui.substrate < 0.1 ) this.gui.substrate = 0.25;
 			else if( this.gui.substrate > 0 && this.gui.substrate < 0.25 ) this.gui.substrate = 0.5;
 			else if( this.gui.substrate >= 0.25 && this.gui.substrate < 0.5 ) this.gui.substrate = 0.75;
 			else this.gui.substrate = 1;
-
 		}
 
 		if( key == 'audio'  ) {
