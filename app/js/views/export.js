@@ -29,7 +29,7 @@ var Export = function( ){
 		var data = JSON.parse(ev.data);
 
 		var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">';
-		var segments = 16;
+
 		for( var i = 0 ; i < data.totalCircles.value ; i++ ){
 
 			var color;

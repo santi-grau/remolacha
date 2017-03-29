@@ -1,6 +1,7 @@
 var Dat = require('dat-gui');
 var Matter = require('matter-js');
 var TweenMax = require('gsap');
+var SimplexNoise = require('simplex-noise');
 
 var Data = function( parent ){
 	var _this = this;
@@ -12,9 +13,19 @@ var Data = function( parent ){
 
 	this.idleIntensity = 0.5;
 
+	this.ringRadius = 300;
+	this.segmentRadius = 50;
+
+	this.generators = [];
+	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
+
 	this.substrate = 0;
 	this.light = 0;
 	this.water = 0;
+
+	this.pos0 = [];
+	this.pos1 = [];
+	this.pos2 = [];
 
 	this.lightInc = 0.0001;
 	this.lightIsOn = false;
@@ -211,6 +222,33 @@ Data.prototype.step = function( time ){
 	}
 
 	this.idleIntensity =  0.3 + this.audioData[4] * 0.7;
+
+
+
+	for( var j = 0 ; j < 3 ; j++ ){
+		var pos = [], zeropos = [];
+		for( var i = 0 ; i < this.segments ; i++ ){
+			var p = [ Math.cos( Math.PI * 2 * i / ( this.segments ) ), Math.sin( Math.PI * 2 * i / ( this.segments ) ) ];
+
+			if( i == 0 ){
+				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
+				pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
+			}
+
+			var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
+			pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
+
+			if( i == this.segments - 1 ){
+				pos.push( zeropos[0], zeropos[1], 0, zeropos[0], zeropos[1], 0 );
+			}
+
+			if( i == 0 ){
+				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
+				zeropos = [ p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 ];
+			}
+		}
+		this[ 'pos' + j ] = pos;
+	}
 
 	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.gui.substrate } );
 	if( this.gui.substrate > 0 ) this.gui.substrate -= 0.001;

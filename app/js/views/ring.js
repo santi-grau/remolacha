@@ -1,27 +1,19 @@
 var lineVs = require('./../../shaders/lineVs.glsl');
 var lineFs = require('./../../shaders/lineFs.glsl');
-
-var SimplexNoise = require('simplex-noise');
-
 var Work = require('webworkify');
 
-var Ring = function( parent, segmentRadius, ringRadius ){
+var Ring = function( parent, segmentRadius ){
 	this.parent = parent;
  	this.speed = 0.01;
 	this.timeStep = 0;
 	this.segmentRadius = segmentRadius;
-	this.ringRadius = ringRadius;
-	this.generators = [];
+	
 	this.waterStep = 0.5;
 
-	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
-
-	var position = [];
-	var ids = [];
-	var iids = [];
+	var position = [], ids = [], iids = [];
 
 	for( var j = 0 ; j < this.parent.data.rings ; j++ ){
-		for( var i = 0 ; i < 128 + 3 ; i++ ){
+		for( var i = 0 ; i < this.parent.data.segments + 3 ; i++ ){
 			position.push( 0, 0, 0 );
 			ids.push( j );
 			iids.push( i );
@@ -48,7 +40,7 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 			waterStep : { value : this.waterStep },
 			waterIntensity : { value : this.parent.data.waterIntensity },
 			waterPhase : { value : this.parent.data.waterPhase },
-			ringRadius : { value : this.ringRadius },
+			ringRadius : { value : this.parent.data.ringRadius },
 			audioData : { value :[] },
 			totalCircles : { value : this.parent.data.rings },
 			time : { value : 0 }
@@ -73,7 +65,6 @@ Ring.prototype.updateColors = function( ){
 		color.push(0,0,0,0);
 		for( var i = 0 ; i < this.parent.data.segments ; i++ ) color.push(0,0,0,1);
 		color.push(0,0,0,1,0,0,0,0);
-		for( var i = this.parent.data.segments ; i < 128 ; i++ ) color.push(0,0,0,0);
 	}
 	
 	this.mesh.geometry.attributes.color.array = new Float32Array( color );
@@ -102,7 +93,6 @@ Ring.prototype.export = function( ) {
 		// document.body.removeChild(element);
 
 	}.bind(this));
-	
 
 	w.postMessage( JSON.stringify( this.mesh.material.uniforms ) );
 };
@@ -125,32 +115,11 @@ Ring.prototype.step = function(time){
 	this.mesh.material.uniforms.soil.value = this.parent.data.gui.soil / 50 - 1;
 	this.mesh.material.uniforms.air.value = this.parent.data.gui.air / 50 - 1;
 
-	for( var j = 0 ; j < 3 ; j++ ){
-		var pos = [], zeropos = [];
-		for( var i = 0 ; i < this.parent.data.segments ; i++ ){
-			var p = [ Math.cos( Math.PI * 2 * i / ( this.parent.data.segments ) ), Math.sin( Math.PI * 2 * i / ( this.parent.data.segments ) ) ];
-
-			if( i == 0 ){
-				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.idleIntensity * this.segmentRadius / 5;
-				pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
-			}
-
-			var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.idleIntensity * this.segmentRadius / 5;
-			pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
-
-			if( i == this.parent.data.segments - 1 ){
-				pos.push( zeropos[0], zeropos[1], 0, zeropos[0], zeropos[1], 0 );
-			}
-
-			if( i == 0 ){
-				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.idleIntensity * this.segmentRadius / 5;
-				zeropos = [ p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 ];
-			}
-		}
-		this.mesh.material.uniforms[ 'pos' + j ].value = pos;
-	}
+	this.mesh.material.uniforms.pos0.value = this.parent.data.pos0;
+	this.mesh.material.uniforms.pos1.value = this.parent.data.pos1;
+	this.mesh.material.uniforms.pos2.value = this.parent.data.pos2;
+	
 	this.mesh.geometry.attributes.position.needsUpdate = true;
-
 }
 
 module.exports = Ring;

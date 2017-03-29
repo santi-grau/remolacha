@@ -53,8 +53,7 @@ var App = function() {
 	this.containerEl = document.getElementById('main');
 
 	this.data = new Data( this );
-
-	this.ring = new Ring( this, 50, 300 );
+	this.ring = new Ring( this );
 	
 	this.renderer = new THREE.WebGLRenderer( { alpha : true, antialias : true } );
 	this.containerEl.appendChild( this.renderer.domElement );
@@ -82,8 +81,9 @@ App.prototype.onResize = function(e) {
 App.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
 
+	
+	this.data.step( time );
 	this.ring.step( time );
-	this.data.step( time )
 	this.renderer.render( this.scene, this.camera );
 };
 
