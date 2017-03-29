@@ -12,14 +12,14 @@ Should be ready on port 5000
 - [ ] Add new order of parameters
 - [ ] Sync vs and exporter
 - [ ] Performance
-- [ ] Add measurements ( air moisture, land moisture, temperature)
+- [x] Add measurements ( air moisture, land moisture, temperature)
 - [ ] Interpolation ring n to ring  creates artifacts sometimes
 - [ ] Responsive
 - [ ] Devices
 - [ ] Replace matter for something more lightweight and performant
 - [ ] SVG exporter
 - [ ] Big cleanup
-- [ ] BIg rewrite
+- [ ] Big rewrite
 
 ### PARAMS
 
