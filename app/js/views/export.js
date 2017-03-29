@@ -1,7 +1,9 @@
-
+var SimplexNoise = require('simplex-noise');
 
 var Export = function( ){
 	self.addEventListener('message',function (ev){
+
+		var noise = new SimplexNoise( );
 
 		function HSVtoRGB(h, s, v) {
 			var r, g, b, i, f, p, q, t;
@@ -39,15 +41,20 @@ var Export = function( ){
 
 			if( i >= 0 && i < data.totalCircles.value / 3 ){
 					var step = i / ( data.totalCircles.value / 3);
+					
+					var px = Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
+
 				for( var j = 0 ; j < data.pos0.value.length ; j+=3 ){
 					if( j == 0 ){
-						var px = parseFloat( 400 + parseFloat( data.pos0.value[j] + ( data.pos1.value[j] - data.pos0.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ px +' '+ py;
-					} else {
-						var px = parseFloat( 400 + parseFloat( data.pos0.value[j] + ( data.pos1.value[j] - data.pos0.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						svg += ' L'+ px +' '+ py ;
+						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos0.value[j] + ( data.pos1.value[j] - data.pos0.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) );
+						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ (px + sx) +' '+ (py + sy);
+					} else {						
+						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos0.value[j] + ( data.pos1.value[j] - data.pos0.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) );
+						svg += ' L'+ (px + sx) +' '+ (py + sy) ;
 					}
 				}
 				svg += '"/>';
@@ -55,15 +62,20 @@ var Export = function( ){
 
 			if( i >= data.totalCircles.value / 3 && i < data.totalCircles.value / 3 * 2 ){
 					var step = (i - data.totalCircles.value / 3) / ( data.totalCircles.value / 3);
+
+					var px = Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+
+					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
 				for( var j = 0 ; j < data.pos1.value.length ; j+=3 ){
 					if( j == 0 ){
-						var px = parseFloat( 400 + parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ px +' '+ py;
+						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) );
+						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ (px + sx) +' '+ (py + sy);
 					} else {
-						var px = parseFloat( 400 + parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						svg += ' L'+ px +' '+ py ;
+						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) );
+						svg += ' L'+ (px + sx) +' '+ (py + sy) ;
 					}
 				}
 				svg += '"/>';
@@ -71,15 +83,19 @@ var Export = function( ){
 
 			if( i >= data.totalCircles.value / 3 * 2 ){
 					var step = (i - data.totalCircles.value / 3 * 2) / ( data.totalCircles.value / 3);
+					var px = Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value )
+					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
+
 				for( var j = 0 ; j < data.pos2.value.length ; j+=3 ){
 					if( j == 0 ){
-						var px = parseFloat( 400 + parseFloat( data.pos2.value[j] + ( data.pos0.value[j] - data.pos2.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ px +' '+ py;
+						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos2.value[j] + ( data.pos0.value[j] - data.pos2.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) );
+						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ (px + sx) +' '+ (py + sy);
 					} else {
-						var px = parseFloat( 400 + parseFloat( data.pos2.value[j] + ( data.pos0.value[j] - data.pos2.value[j]) * step ) ) + Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						var py = parseFloat( 400 + parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) ) + Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-						svg += ' L'+ px +' '+ py ;
+						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos2.value[j] + ( data.pos0.value[j] - data.pos2.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) );
+						svg += ' L'+ (px + sx) +' '+ (py + sy) ;
 					}
 				}
 				svg += '"/>';
