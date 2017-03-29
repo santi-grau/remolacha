@@ -27,6 +27,9 @@ Should be ready on port 5000
 * ringRadius -> Radius of ring
 * rings -> Amount of rings
 * segments -> Amount of segments per ring
+* pos0 -> Array, contains positions for first interpolation ring [ ( segments + 3 ) * 3 ]
+* pos1 -> Array, contains positions for first interpolation ring [ ( segments + 3 ) * 3 ]
+* pos2 -> Array, contains positions for first interpolation ring [ ( segments + 3 ) * 3 ]
 * temperature -> Temperature of air [ 0, 1 ] controls how wiggly rings are on resting state
 * soil -> Soil moisture [ 0, 1 ] controls how intense deformations of rings are on resting state
 * air -> Air moisture [ 0, 1 ] controls how intense external deformation is on resting state
