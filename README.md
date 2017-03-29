@@ -9,7 +9,7 @@ Should be ready on port 5000
 
 ### TODO
 
--[ ] Multiple generators
+- [ ] Multiple generators
 2. Ring amount selector
 3. Springs should loop
 4. Audio - OK
