@@ -54,8 +54,7 @@ var App = function() {
 	this.containerEl = document.getElementById('main');
 
 	this.data = new Data( this );
-
-	this.ring = new Ring( this, 50, 300 );
+	this.ring = new Ring( this );
 	
 	this.renderer = new THREE.WebGLRenderer( { alpha : true, antialias : true } );
 	this.containerEl.appendChild( this.renderer.domElement );
@@ -83,8 +82,9 @@ App.prototype.onResize = function(e) {
 App.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
 
+	
+	this.data.step( time );
 	this.ring.step( time );
-	this.data.step( time )
 	this.renderer.render( this.scene, this.camera );
 };
 
@@ -93,6 +93,7 @@ var app = new App();
 var Dat = require('dat-gui');
 var Matter = require('matter-js');
 var TweenMax = require('gsap');
+var SimplexNoise = require('simplex-noise');
 
 var Data = function( parent ){
 	var _this = this;
@@ -104,9 +105,19 @@ var Data = function( parent ){
 
 	this.idleIntensity = 0.5;
 
+	this.ringRadius = 300;
+	this.segmentRadius = 50;
+
+	this.generators = [];
+	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
+
 	this.substrate = 0;
 	this.light = 0;
 	this.water = 0;
+
+	this.pos0 = [];
+	this.pos1 = [];
+	this.pos2 = [];
 
 	this.lightInc = 0.0001;
 	this.lightIsOn = false;
@@ -304,13 +315,40 @@ Data.prototype.step = function( time ){
 
 	this.idleIntensity =  0.3 + this.audioData[4] * 0.7;
 
+
+
+	for( var j = 0 ; j < 3 ; j++ ){
+		var pos = [], zeropos = [];
+		for( var i = 0 ; i < this.segments ; i++ ){
+			var p = [ Math.cos( Math.PI * 2 * i / ( this.segments ) ), Math.sin( Math.PI * 2 * i / ( this.segments ) ) ];
+
+			if( i == 0 ){
+				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
+				pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
+			}
+
+			var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
+			pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
+
+			if( i == this.segments - 1 ){
+				pos.push( zeropos[0], zeropos[1], 0, zeropos[0], zeropos[1], 0 );
+			}
+
+			if( i == 0 ){
+				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
+				zeropos = [ p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 ];
+			}
+		}
+		this[ 'pos' + j ] = pos;
+	}
+
 	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.gui.substrate } );
 	if( this.gui.substrate > 0 ) this.gui.substrate -= 0.001;
 	this.substrate = ( this.substrateAnchor.position.y - this.substrateParticle.position.y ) / 125;
 }
 
 module.exports = Data;
-},{"dat-gui":7,"gsap":11,"matter-js":12}],3:[function(require,module,exports){
+},{"dat-gui":7,"gsap":11,"matter-js":12,"simplex-noise":13}],3:[function(require,module,exports){
 var SimplexNoise = require('simplex-noise');
 
 var Export = function( ){
@@ -342,7 +380,7 @@ var Export = function( ){
 		var data = JSON.parse(ev.data);
 
 		var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">';
-		var segments = 16;
+
 		for( var i = 0 ; i < data.totalCircles.value ; i++ ){
 
 			var color;
@@ -433,28 +471,20 @@ module.exports = Export;
 },{"simplex-noise":13}],4:[function(require,module,exports){
 var lineVs = require('./../../shaders/lineVs.glsl');
 var lineFs = require('./../../shaders/lineFs.glsl');
-
-var SimplexNoise = require('simplex-noise');
-
 var Work = require('webworkify');
 
-var Ring = function( parent, segmentRadius, ringRadius ){
+var Ring = function( parent, segmentRadius ){
 	this.parent = parent;
  	this.speed = 0.01;
 	this.timeStep = 0;
 	this.segmentRadius = segmentRadius;
-	this.ringRadius = ringRadius;
-	this.generators = [];
+	
 	this.waterStep = 0.5;
 
-	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
-
-	var position = [];
-	var ids = [];
-	var iids = [];
+	var position = [], ids = [], iids = [];
 
 	for( var j = 0 ; j < this.parent.data.rings ; j++ ){
-		for( var i = 0 ; i < 128 + 3 ; i++ ){
+		for( var i = 0 ; i < this.parent.data.segments + 3 ; i++ ){
 			position.push( 0, 0, 0 );
 			ids.push( j );
 			iids.push( i );
@@ -481,7 +511,7 @@ var Ring = function( parent, segmentRadius, ringRadius ){
 			waterStep : { value : this.waterStep },
 			waterIntensity : { value : this.parent.data.waterIntensity },
 			waterPhase : { value : this.parent.data.waterPhase },
-			ringRadius : { value : this.ringRadius },
+			ringRadius : { value : this.parent.data.ringRadius },
 			audioData : { value :[] },
 			totalCircles : { value : this.parent.data.rings },
 			time : { value : 0 }
@@ -506,7 +536,6 @@ Ring.prototype.updateColors = function( ){
 		color.push(0,0,0,0);
 		for( var i = 0 ; i < this.parent.data.segments ; i++ ) color.push(0,0,0,1);
 		color.push(0,0,0,1,0,0,0,0);
-		for( var i = this.parent.data.segments ; i < 128 ; i++ ) color.push(0,0,0,0);
 	}
 	
 	this.mesh.geometry.attributes.color.array = new Float32Array( color );
@@ -535,7 +564,6 @@ Ring.prototype.export = function( ) {
 		// document.body.removeChild(element);
 
 	}.bind(this));
-	
 
 	w.postMessage( JSON.stringify( this.mesh.material.uniforms ) );
 };
@@ -558,36 +586,15 @@ Ring.prototype.step = function(time){
 	this.mesh.material.uniforms.soil.value = this.parent.data.gui.soil / 50 - 1;
 	this.mesh.material.uniforms.air.value = this.parent.data.gui.air / 50 - 1;
 
-	for( var j = 0 ; j < 3 ; j++ ){
-		var pos = [], zeropos = [];
-		for( var i = 0 ; i < this.parent.data.segments ; i++ ){
-			var p = [ Math.cos( Math.PI * 2 * i / ( this.parent.data.segments ) ), Math.sin( Math.PI * 2 * i / ( this.parent.data.segments ) ) ];
-
-			if( i == 0 ){
-				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.idleIntensity * this.segmentRadius / 5;
-				pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
-			}
-
-			var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.idleIntensity * this.segmentRadius / 5;
-			pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
-
-			if( i == this.parent.data.segments - 1 ){
-				pos.push( zeropos[0], zeropos[1], 0, zeropos[0], zeropos[1], 0 );
-			}
-
-			if( i == 0 ){
-				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.parent.data.idleIntensity * this.segmentRadius / 5;
-				zeropos = [ p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 ];
-			}
-		}
-		this.mesh.material.uniforms[ 'pos' + j ].value = pos;
-	}
+	this.mesh.material.uniforms.pos0.value = this.parent.data.pos0;
+	this.mesh.material.uniforms.pos1.value = this.parent.data.pos1;
+	this.mesh.material.uniforms.pos2.value = this.parent.data.pos2;
+	
 	this.mesh.geometry.attributes.position.needsUpdate = true;
-
 }
 
 module.exports = Ring;
-},{"./../../shaders/lineFs.glsl":5,"./../../shaders/lineVs.glsl":6,"./export.js":3,"simplex-noise":13,"webworkify":15}],5:[function(require,module,exports){
+},{"./../../shaders/lineFs.glsl":5,"./../../shaders/lineVs.glsl":6,"./export.js":3,"webworkify":15}],5:[function(require,module,exports){
 module.exports = "varying vec4 vColor;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ fragment shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main( ){\n\tgl_FragColor = vColor;\n}";
 
 },{}],6:[function(require,module,exports){
