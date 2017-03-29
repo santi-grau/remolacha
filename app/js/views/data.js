@@ -2,8 +2,6 @@ var Dat = require('dat-gui');
 var Matter = require('matter-js');
 var TweenMax = require('gsap');
 
-
-
 var Data = function( parent ){
 	var _this = this;
 	this.parent = parent;

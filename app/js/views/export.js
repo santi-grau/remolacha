@@ -24,7 +24,6 @@ var Export = function( ){
 				case 5: r = v, g = p, b = q; break;
 			}
 			return Math.round(r * 255) +','+ Math.round(g * 255)+','+ Math.round(b * 255)
-			
 		}
 
 		var data = JSON.parse(ev.data);
@@ -45,6 +44,9 @@ var Export = function( ){
 					var px = Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
+
+					px += px * def * 0.1;
+					py += px * def * 0.1;
 
 				for( var j = 0 ; j < data.pos0.value.length ; j+=3 ){
 					if( j == 0 ){
@@ -67,6 +69,10 @@ var Export = function( ){
 					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 
 					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
+
+					px += px * def * 0.1;
+					py += px * def * 0.1;
+
 				for( var j = 0 ; j < data.pos1.value.length ; j+=3 ){
 					if( j == 0 ){
 						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) );
@@ -86,6 +92,9 @@ var Export = function( ){
 					var px = Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value )
 					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
+
+					px += px * def * 0.1;
+					py += px * def * 0.1;
 
 				for( var j = 0 ; j < data.pos2.value.length ; j+=3 ){
 					if( j == 0 ){

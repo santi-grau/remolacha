@@ -1,8 +1,6 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 window.THREE = require('three');
-
 var TweenMax = require('gsap');
-
 var EventEmitter = require('events').EventEmitter;
 
 window.webkitRequestAnimationFrame = window.requestAnimationFrame;
@@ -13,38 +11,27 @@ var Data = require('./views/data');
 
 var SoundCloudAudioSource = function(audioElement, audioFile) {
 	this.isPlaying = false;
-    var player = document.getElementById(audioElement);
-    var self = this;
-    var analyser;
-    var audioCtx = new (window.AudioContext || window.webkitAudioContext); // this is because it's not been standardised accross browsers yet.
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256; // see - there is that 'fft' thing. 
-    var source = audioCtx.createMediaElementSource(player); // this is where we hook up the <audio> element
-    source.connect(analyser);
-    analyser.connect(audioCtx.destination);
-    this.streamData = new Uint8Array(128);
-    this.sampleAudioStream = function() {
-
-        analyser.getByteFrequencyData(self.streamData);
-        // calculate an overall volume value
-        var total = 0;
-        //self.streamData = analyser;
- 
-        self.volume = total;
-    }; 
-    // public properties and methods
-    this.volume = 0;
-     // This just means we will have 128 "bins" (always half the analyzer.fftsize value), each containing a number between 0 and 255. 
-   
-        player.setAttribute('src', audioFile);
-    
-
-    this.stopPlayStream = function() {
-    	if(!this.isPlaying) player.play();
-        else player.pause();
-    }
-
-
+	var player = document.getElementById(audioElement);
+	var self = this;
+	var analyser;
+	var audioCtx = new (window.AudioContext || window.webkitAudioContext);
+	analyser = audioCtx.createAnalyser();
+	analyser.fftSize = 256;
+	var source = audioCtx.createMediaElementSource(player);
+	source.connect(analyser);
+	analyser.connect(audioCtx.destination);
+	this.streamData = new Uint8Array(128);
+	this.sampleAudioStream = function() {
+		analyser.getByteFrequencyData(self.streamData);
+		var total = 0;
+		self.volume = total;
+	}; 
+	this.volume = 0;
+	player.setAttribute('src', audioFile);
+	this.stopPlayStream = function() {
+		if(!this.isPlaying) player.play();
+		else player.pause();
+	}
 };
 
 
@@ -80,17 +67,7 @@ var App = function() {
 
 	window.onresize = this.onResize.bind( this );
 
-	this.onResize();
-
-	// var dataJSON = {
-	// 	temperature : 30,
-	// 	air : 60,
-	// 	soil : 40,
-	// 	water : false,
-	// 	light : false,
-	// 	substrate : true
-	// };
-	// this.data.update( JSON.stringify(dataJSON) );
+	this.onResize(); 
 
 	this.step();
 }
@@ -116,8 +93,6 @@ var app = new App();
 var Dat = require('dat-gui');
 var Matter = require('matter-js');
 var TweenMax = require('gsap');
-
-
 
 var Data = function( parent ){
 	var _this = this;
@@ -362,7 +337,6 @@ var Export = function( ){
 				case 5: r = v, g = p, b = q; break;
 			}
 			return Math.round(r * 255) +','+ Math.round(g * 255)+','+ Math.round(b * 255)
-			
 		}
 
 		var data = JSON.parse(ev.data);
@@ -383,6 +357,9 @@ var Export = function( ){
 					var px = Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
+
+					px += px * def * 0.1;
+					py += px * def * 0.1;
 
 				for( var j = 0 ; j < data.pos0.value.length ; j+=3 ){
 					if( j == 0 ){
@@ -405,6 +382,10 @@ var Export = function( ){
 					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 
 					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
+
+					px += px * def * 0.1;
+					py += px * def * 0.1;
+
 				for( var j = 0 ; j < data.pos1.value.length ; j+=3 ){
 					if( j == 0 ){
 						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) );
@@ -424,6 +405,9 @@ var Export = function( ){
 					var px = Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
 					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value )
 					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
+
+					px += px * def * 0.1;
+					py += px * def * 0.1;
 
 				for( var j = 0 ; j < data.pos2.value.length ; j+=3 ){
 					if( j == 0 ){
@@ -535,20 +519,20 @@ Ring.prototype.export = function( ) {
 	w.addEventListener('message', function (ev) {
 		var parser = new DOMParser();
 		var doc = parser.parseFromString(ev.data, "image/svg+xml");
-		// this.parent.containerEl.appendChild(doc.childNodes[0]);
+		this.parent.containerEl.appendChild(doc.childNodes[0]);
 
-		var source = ev.data;
+		// var source = ev.data;
 
-		var element = document.createElement('a');
-		element.setAttribute('href', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ev.data));
-		element.setAttribute('download', 'SVGexport');
+		// var element = document.createElement('a');
+		// element.setAttribute('href', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ev.data));
+		// element.setAttribute('download', 'SVGexport');
 
-		element.style.display = 'none';
-		document.body.appendChild(element);
+		// element.style.display = 'none';
+		// document.body.appendChild(element);
 
-		element.click();
+		// element.click();
 
-		document.body.removeChild(element);
+		// document.body.removeChild(element);
 
 	}.bind(this));
 	

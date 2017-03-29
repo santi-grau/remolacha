@@ -1,7 +1,5 @@
 window.THREE = require('three');
-
 var TweenMax = require('gsap');
-
 var EventEmitter = require('events').EventEmitter;
 
 window.webkitRequestAnimationFrame = window.requestAnimationFrame;
@@ -12,38 +10,27 @@ var Data = require('./views/data');
 
 var SoundCloudAudioSource = function(audioElement, audioFile) {
 	this.isPlaying = false;
-    var player = document.getElementById(audioElement);
-    var self = this;
-    var analyser;
-    var audioCtx = new (window.AudioContext || window.webkitAudioContext); // this is because it's not been standardised accross browsers yet.
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256; // see - there is that 'fft' thing. 
-    var source = audioCtx.createMediaElementSource(player); // this is where we hook up the <audio> element
-    source.connect(analyser);
-    analyser.connect(audioCtx.destination);
-    this.streamData = new Uint8Array(128);
-    this.sampleAudioStream = function() {
-
-        analyser.getByteFrequencyData(self.streamData);
-        // calculate an overall volume value
-        var total = 0;
-        //self.streamData = analyser;
- 
-        self.volume = total;
-    }; 
-    // public properties and methods
-    this.volume = 0;
-     // This just means we will have 128 "bins" (always half the analyzer.fftsize value), each containing a number between 0 and 255. 
-   
-        player.setAttribute('src', audioFile);
-    
-
-    this.stopPlayStream = function() {
-    	if(!this.isPlaying) player.play();
-        else player.pause();
-    }
-
-
+	var player = document.getElementById(audioElement);
+	var self = this;
+	var analyser;
+	var audioCtx = new (window.AudioContext || window.webkitAudioContext);
+	analyser = audioCtx.createAnalyser();
+	analyser.fftSize = 256;
+	var source = audioCtx.createMediaElementSource(player);
+	source.connect(analyser);
+	analyser.connect(audioCtx.destination);
+	this.streamData = new Uint8Array(128);
+	this.sampleAudioStream = function() {
+		analyser.getByteFrequencyData(self.streamData);
+		var total = 0;
+		self.volume = total;
+	}; 
+	this.volume = 0;
+	player.setAttribute('src', audioFile);
+	this.stopPlayStream = function() {
+		if(!this.isPlaying) player.play();
+		else player.pause();
+	}
 };
 
 
@@ -79,17 +66,7 @@ var App = function() {
 
 	window.onresize = this.onResize.bind( this );
 
-	this.onResize();
-
-	// var dataJSON = {
-	// 	temperature : 30,
-	// 	air : 60,
-	// 	soil : 40,
-	// 	water : false,
-	// 	light : false,
-	// 	substrate : true
-	// };
-	// this.data.update( JSON.stringify(dataJSON) );
+	this.onResize(); 
 
 	this.step();
 }
