@@ -7,69 +7,46 @@ var Data = function( parent ){
 	var _this = this;
 	this.parent = parent;
 
-	this.totalColors = 1;
-
-	this.audioData = [];
-
-	this.idleIntensity = 0.5;
-
-	this.ringRadius = 300;
-	this.segmentRadius = 50;
-
-	this.generators = [];
-	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
-
-	this.substrate = 0;
-	this.light = 0;
-	this.water = 0;
-
+	// main params
+	this.bigRadius = 200;
+	this.ringRadius = 50;
+	this.rings = 512;
+	this.segments = 64;
 	this.pos0 = [];
 	this.pos1 = [];
 	this.pos2 = [];
-
-	this.lightInc = 0.0001;
-	this.lightIsOn = false;
-
-	this.waterIsOn = false;
-
-	this.segments = 64;
-	this.rings = 512;
-
-	this.waterIntensity = 0.5;
+	this.temperature = Math.random();
+	this.soil = Math.random();
+	this.air = Math.random() * 1000;
+	this.airInc = Math.random();
+	this.water = false;
+	this.waterStep = 0.5;
 	this.waterPhase = 300;
+	this.waterIntensity = 0;
+	this.light = false;
+	this.lightStep = Math.random();
+	this.lightInc = 0.0001;
+
+
+	this.substrate = 0;
+	this.audio = false;
+	this.time = 0;
+	this.speed = 0.01;
+	this.timeStep = 0;
+
+	this.audioData = [];
+	this.generators = [];
+	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
 
 	var GuiParameters = function() {
-		this.temperature = 50;
-		this.soil = 50;
-		this.water = 0;
-		this.air = 50;
-		this.light = Math.random();
-		this.addWater = function(){
-			if( !_this.waterIsOn ){
-				TweenMax.to( this, 0.5, { water : 1 });
-				_this.waterInterval = setInterval(function(){
-					TweenMax.to( this, 2.5, { water : 0, ease: Power3.easeOut });
-					_this.waterIsOn = false;
-				}.bind(this), 5000);
-			} else {
-				clearInterval( _this.waterInterval );
-				TweenMax.to( this, 2.5, { water : 0, ease: Power3.easeOut });
-			}
-			
-			_this.waterIsOn = !_this.waterIsOn;
-		}
-		this.switchLight = function(){
-			if( !_this.lightIsOn ){
-				TweenMax.to( _this, 0.5, { lightInc : 0.005 });
-				_this.lightInterval = setInterval(function(){
-					TweenMax.to( _this, 0.5, { lightInc : 0.0001 });
-				}, 5000);
-			} else {
-				clearInterval( _this.lightInterval );
-				TweenMax.to( _this, 0.5, { lightInc : 0.0001 });
-			}
-			_this.lightIsOn = !_this.lightIsOn;
-		}
+		this.bigRadius = _this.bigRadius;
+		this.ringRadius = _this.ringRadius;
+		this.temperature = _this.temperature;
+		this.soil = _this.soil;
+		this.air = _this.airInc;
+		this.water = _this.water;
+		this.light = _this.light;
+
 
 		this.addSubstrate = function(){
 			if( this.substrate < 0.1 ) this.substrate = 0.25;
@@ -95,16 +72,15 @@ var Data = function( parent ){
 
 	this.f1 = gui.addFolder('Main data');
 	
-	this.f1.add( this.gui, 'temperature', 0, 100 ).listen();
-	this.f1.add( this.gui, 'soil', 0, 100 ).listen();
-	this.f1.add( this.gui, 'air', 0, 100 ).listen();
-	this.f1.add( this.gui, 'addWater' );
-	this.f1.add( this.gui, 'water', 0, 1 ).listen().onChange( function( value ){ this.parent.emitter.emit('water', value ); }.bind(this) );
-	this.f1.add( this.gui, 'switchLight' );
-	this.f1.add( this.gui, 'light', 0, 1 ).listen().onChange( function( value ){ this.parent.emitter.emit('light', value ); }.bind(this) );
+	this.f1.add( this.gui, 'bigRadius', 100, 400 ).listen().onChange( function( value ){ _this.bigRadius = value; }.bind(this) );
+	this.f1.add( this.gui, 'ringRadius', 5, 100 ).listen().onChange( function( value ){ _this.ringRadius = value; }.bind(this) );
+	this.f1.add( this.gui, 'temperature', 0, 1 ).listen().onChange( function( value ){ _this.temperature = value; }.bind(this) );
+	this.f1.add( this.gui, 'soil', 0, 1 ).listen().onChange( function( value ){ _this.soil = value; }.bind(this) );
+	this.f1.add( this.gui, 'air', 0, 1 ).listen().onChange( function( value ){ _this.airInc = value; }.bind(this) );
+	this.f1.add( this.gui, 'water' ).listen().onChange( function( value ){ _this.water = value; }.bind(this) );
+	this.f1.add( this.gui, 'light' ).listen().onChange( function( value ){ _this.light = value; }.bind(this) );
 
 	this.f1.add( this.gui, 'addSubstrate' );
-	this.f1.add( this.gui, 'substrate', 0.0, 1.0 ).listen().onChange( function( value ){ this.parent.emitter.emit('substrate', value ); }.bind(this) );
 	this.f1.add( this.gui, 'playPauseAudio');
 
 	this.f1.add( this.gui, 'export');
@@ -160,30 +136,10 @@ Data.prototype.update = function( data ){
 		if( key == 'soil' ) this.gui.soil = param[key];
 
 		if( key == 'water'  ) {
-			if( param[key] ){
-				TweenMax.to( this.gui, 0.5, { water : 1 });
-				_this.waterInterval = setInterval(function(){
-					TweenMax.to( this.gui, 2.5, { water : 0, ease: Power3.easeOut });
-					_this.waterIsOn = false;
-				}.bind(this), 5000);
-			} else {
-				clearInterval( _this.waterInterval );
-				TweenMax.to( this.gui, 2.5, { water : 0, ease: Power3.easeOut });
-			}
-			_this.waterIsOn = !_this.waterIsOn;
+			_this.water = key;
 		}
-
 		if( key == 'light'  ) {
-			if( param[key] ){
-				TweenMax.to( _this, 0.5, { lightInc : 0.005 });
-				_this.lightInterval = setInterval(function(){
-					TweenMax.to( _this, 0.5, { lightInc : 0.0001 });
-				}, 5000);
-			} else {
-				clearInterval( _this.lightInterval );
-				TweenMax.to( _this, 0.5, { lightInc : 0.0001 });
-			}
-			_this.lightIsOn = !_this.lightIsOn;
+			_this.light = key;
 		}
 
 		if( key == 'substrate'  ) {
@@ -209,42 +165,48 @@ Data.prototype.update = function( data ){
 }
 
 Data.prototype.step = function( time ){
-	
-	if( this.gui.light < 1 ) this.gui.light += this.lightInc;
-	else this.gui.light = 0;
 
+	// water
+	if( this.water ) this.waterIntensity += ( 1 - this.waterIntensity ) * 0.05;
+	else this.waterIntensity += ( 0 - this.waterIntensity ) * 0.05;
+
+	this.waterStep += 0.01;
+
+	//light
+	if( this.light ) this.lightInc += ( 0.005 - this.lightInc ) * 0.05;
+	else this.lightInc += ( 0.0001 - this.lightInc ) * 0.05;
+
+	if( this.lightStep < 1 ) this.lightStep += this.lightInc;
+	else this.lightStep = 0;
+
+	//substate
+
+	// audio
 	this.parent.audioSource.sampleAudioStream();
 	
+
+	this.timeStep += this.speed;
+	this.air += 0.0005 + 0.003 * this.airInc;
+
 	for( var i = 0 ; i < 128 ; i++ ){
 		Matter.Body.applyForce( this.stack.bodies[ i ], this.fixed.bodies[ i ].position, { x : 0 , y: -this.parent.audioSource.streamData[i] / 255 } );
-
 		this.audioData[i] = (this.fixed.bodies[ i ].position.y - this.stack.bodies[ i ].position.y) / 125
 	}
-
-	this.idleIntensity =  0.3 + this.audioData[4] * 0.7;
-
-
 
 	for( var j = 0 ; j < 3 ; j++ ){
 		var pos = [], zeropos = [];
 		for( var i = 0 ; i < this.segments ; i++ ){
 			var p = [ Math.cos( Math.PI * 2 * i / ( this.segments ) ), Math.sin( Math.PI * 2 * i / ( this.segments ) ) ];
-
 			if( i == 0 ){
-				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
-				pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
+				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
+				pos.push( p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
 			}
-
-			var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
-			pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
-
-			if( i == this.segments - 1 ){
-				pos.push( zeropos[0], zeropos[1], 0, zeropos[0], zeropos[1], 0 );
-			}
-
+			var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
+			pos.push( p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
+			if( i == this.segments - 1 ) pos.push( zeropos[0], zeropos[1], 0, zeropos[0], zeropos[1], 0 );	
 			if( i == 0 ){
-				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
-				zeropos = [ p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 ];
+				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
+				zeropos = [ p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 ];
 			}
 		}
 		this[ 'pos' + j ] = pos;

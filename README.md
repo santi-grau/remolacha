@@ -13,7 +13,7 @@ Should be ready on port 5000
 - [ ] Sync vs and exporter
 - [ ] Performance
 - [x] Add measurements ( air moisture, land moisture, temperature)
-- [ ] Interpolation ring n to ring  creates artifacts sometimes
+- [x] Interpolation ring n to ring  creates artifacts sometimes
 - [ ] Responsive
 - [ ] Devices
 - [ ] Replace matter for something more lightweight and performant

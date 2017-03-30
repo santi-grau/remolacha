@@ -4,22 +4,21 @@ attribute vec4 color;
 attribute float ids;
 attribute float iids;
 
+uniform float bigRadius;
 uniform vec3 pos0[201];
 uniform vec3 pos1[201];
 uniform vec3 pos2[201];
-
-uniform float substrate;
 uniform float temperature;
 uniform float soil;
 uniform float air;
-uniform float totalCircles;
-uniform float ringRadius;
-uniform float time;
-uniform float light;
 uniform float waterStep;
-uniform float waterIntensity;
 uniform float waterPhase;
+uniform float waterIntensity;
+uniform float lightStep;
+uniform float substrate;
 uniform float audioData[128];
+uniform float rings;
+uniform float time;
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | ASHIMA NOISE
@@ -72,38 +71,38 @@ void main() {
 	vec3 fPos;
 	vec3 interpolate;
 
-	float saturation = 0.9;
-	float balance = 0.7;
-
 	// vertex colors
-	if( ids < totalCircles / 2.0 ) vColor.rgb = hsv2rgb( vec3( light + ids / totalCircles / 2.0 , saturation, balance ) );
-	else vColor.rgb = hsv2rgb( vec3( light + ( totalCircles - ids ) / totalCircles / 2.0 , saturation, balance ) );
+	if( ids < rings / 2.0 ) vColor.rgb = hsv2rgb( vec3( lightStep + ids / rings / 2.0 , 0.9, 0.7 ) );
+	else vColor.rgb = hsv2rgb( vec3( lightStep + ( rings - ids ) / rings / 2.0 , 0.9, 0.7 ) );
 	vColor.a = color.a;
 
 	// rings
-	if( ids < totalCircles * 0.33 ) interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (totalCircles * 0.33);
-	else if( ids >= totalCircles * 0.33 && ids < totalCircles * 0.66 ) interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (totalCircles * 0.33)) / (totalCircles * 0.33);
-	else interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (totalCircles * 0.66)) / (totalCircles * 0.33);
+	if( ids < rings * 0.33 ) interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (rings * 0.33);
+	else if( ids >= rings * 0.33 && ids < rings * 0.66 ) interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (rings * 0.33)) / (rings * 0.33);
+	else interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (rings * 0.66)) / (rings * 0.33);
 
 	// ring positions
-	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), 0.0 );
+	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), sin( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), 0.0 );
 	
 
 	//audio
-	translate.x *= 1.0 + audioData[2] / 5.0 ;
-	translate.y *= 1.0 + audioData[12] / 5.0 ;
-	translate *= 1.0 + cos( time + M_PI * 12.0 * ids / ( totalCircles - 1.0 ) ) * 0.1 *  audioData[8];
+	// translate.x *= 1.0 + audioData[2] / 5.0 ;
+	// translate.y *= 1.0 + audioData[12] / 5.0 ;
+	// translate *= 1.0 + cos( time + M_PI * 12.0 * ids / ( rings - 1.0 ) ) * 0.1 *  audioData[8];
 
 	//params
-	if( ids / totalCircles < 0.3333 ) translate.y *= 1.0 + sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * 0.2 * temperature;
-	if( ids / totalCircles > 0.3333 && ids /  totalCircles < 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * 0.2 * soil;
-	if( ids / totalCircles > 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * -0.2 * air;
+	// if( ids / rings < 0.3333 ) translate.y *= 1.0 + sin( M_PI * 3.0 * ids / ( rings - 1.0 ) ) * 0.2 * temperature;
+	// if( ids / rings > 0.3333 && ids /  rings < 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( rings - 1.0 ) ) * 0.2 * soil;
+	// if( ids / rings > 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( rings - 1.0 ) ) * -0.2 * air;
 
 	// water
-	// interpolate *= snoise( vec2( translate / waterPhase ) + vec2( waterStep, 0.0 ) ) * waterIntensity + 1.0;
-
 	interpolate *= 1.0 + snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) ) * waterIntensity;
 	translate += translate * 0.1 * snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) ) * waterIntensity;
+
+	// soil
+	float def = snoise( vec2( translate.x / 600.0 + air, translate.y / 600.0 ) );
+	translate += translate * 0.3 * snoise( vec2( translate.x / 900.0 + air, translate.y / 900.0 ) ) * (soil);
+	interpolate *= 1.0 + def * ( soil - 0.25 * soil ) ;
 
 	// substrate
 	interpolate *= substrate;

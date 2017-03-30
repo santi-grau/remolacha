@@ -2,17 +2,12 @@ var lineVs = require('./../../shaders/lineVs.glsl');
 var lineFs = require('./../../shaders/lineFs.glsl');
 var Work = require('webworkify');
 
-var Ring = function( parent, segmentRadius ){
+var Ring = function( parent ){
 	this.parent = parent;
- 	this.speed = 0.01;
-	this.timeStep = 0;
-	this.segmentRadius = segmentRadius;
-	
-	this.waterStep = 0.5;
 
 	var position = [], ids = [], iids = [];
 
-	for( var j = 0 ; j < this.parent.data.rings ; j++ ){
+	for( var j = 0 ; j < this.parent.data.rings - 1 ; j++ ){
 		for( var i = 0 ; i < this.parent.data.segments + 3 ; i++ ){
 			position.push( 0, 0, 0 );
 			ids.push( j );
@@ -29,20 +24,20 @@ var Ring = function( parent, segmentRadius ){
 
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
-			temperature : { value : this.parent.data.gui.temperature  },
-			soil : { value : this.parent.data.gui.soil  },
-			air : { value : this.parent.data.gui.air  },
+			bigRadius : { value : 0 },
 			pos0 : { value : [] },
 			pos1 : { value : [] },
 			pos2 : { value : [] },
-			light : { value : this.parent.data.gui.light },
+			temperature : { value : 0  },
+			soil : { value : 0  },
+			air : { value : 0  },
+			waterStep : { value : 0 },
+			waterPhase : { value : 0 },
+			waterIntensity : { value : 0 },
+			lightStep : { value : 0 },
 			substrate : { value : 1 },
-			waterStep : { value : this.waterStep },
-			waterIntensity : { value : this.parent.data.waterIntensity },
-			waterPhase : { value : this.parent.data.waterPhase },
-			ringRadius : { value : this.parent.data.ringRadius },
 			audioData : { value :[] },
-			totalCircles : { value : this.parent.data.rings },
+			rings : { value : this.parent.data.rings },
 			time : { value : 0 }
 		},
 		transparent : true,
@@ -51,24 +46,17 @@ var Ring = function( parent, segmentRadius ){
 	} );
 
 	this.mesh = new THREE.Line( geometry, material );
-
-	this.updateColors( );
-
-	this.parent.emitter.on('export', function( value ) {
-		this.export();
-	}.bind(this));
-}
 	
-Ring.prototype.updateColors = function( ){
 	var color = [];
-	for( var j = 0 ; j < this.parent.data.rings; j++ ){
+	for( var j = 0 ; j < this.parent.data.rings - 1; j++ ){
 		color.push(0,0,0,0);
 		for( var i = 0 ; i < this.parent.data.segments ; i++ ) color.push(0,0,0,1);
 		color.push(0,0,0,1,0,0,0,0);
 	}
-	
 	this.mesh.geometry.attributes.color.array = new Float32Array( color );
 	this.mesh.geometry.attributes.color.needsUpdate = true;
+
+	this.parent.emitter.on('export', this.export.bind(this));
 }
 
 Ring.prototype.export = function( ) {
@@ -98,27 +86,21 @@ Ring.prototype.export = function( ) {
 };
 
 Ring.prototype.step = function(time){
-	this.timeStep += this.speed;
-	this.waterStep += 0.001 + this.parent.data.gui.water / 100;
-
-	this.mesh.material.uniforms.substrate.value = 1 + this.parent.data.substrate;
-	this.mesh.material.uniforms.light.value = this.parent.data.gui.light;
-	this.mesh.material.uniforms.waterStep.value = this.waterStep;
-	this.mesh.material.uniforms.waterIntensity.value = 0.1 + 0.9 * this.parent.data.gui.water;
-
-	this.mesh.material.uniforms.waterPhase.value = 300 + 100 * this.parent.data.gui.water;
-
-	this.mesh.material.uniforms.audioData.value = this.parent.data.audioData;
-	this.mesh.material.uniforms.time.value += 0.11;
-
-	this.mesh.material.uniforms.temperature.value = this.parent.data.gui.temperature / 50 - 1;
-	this.mesh.material.uniforms.soil.value = this.parent.data.gui.soil / 50 - 1;
-	this.mesh.material.uniforms.air.value = this.parent.data.gui.air / 50 - 1;
-
+	this.mesh.material.uniforms.bigRadius.value = this.parent.data.bigRadius;
 	this.mesh.material.uniforms.pos0.value = this.parent.data.pos0;
 	this.mesh.material.uniforms.pos1.value = this.parent.data.pos1;
 	this.mesh.material.uniforms.pos2.value = this.parent.data.pos2;
+	this.mesh.material.uniforms.temperature.value = this.parent.data.temperature;
+	this.mesh.material.uniforms.soil.value = this.parent.data.soil;
+	this.mesh.material.uniforms.air.value = this.parent.data.air;
+	this.mesh.material.uniforms.waterIntensity.value = this.parent.data.waterIntensity;
+	this.mesh.material.uniforms.waterPhase.value = this.parent.data.waterPhase;
+	this.mesh.material.uniforms.waterStep.value = this.parent.data.waterStep;
+	this.mesh.material.uniforms.lightStep.value = this.parent.data.lightStep;
+
+	this.mesh.material.uniforms.substrate.value = 1 + this.parent.data.substrate;
 	
+	// this.mesh.material.uniforms.audioData.value = this.parent.data.audioData;
 	this.mesh.geometry.attributes.position.needsUpdate = true;
 }
 

@@ -55,6 +55,10 @@ app.get('/', function(req, res){
 	res.render( 'main', {title: pckg.name});
 });
 
+app.get('/exporter', function(req, res){
+	res.render( 'main', {title: pckg.name});
+});
+
 app.post('/api', function (req, res, next) {
 	wss.clients.forEach(function each(client) {
 		client.send(JSON.stringify(req.body));
