@@ -89,16 +89,12 @@ void main() {
 	// translate.y *= 1.0 + audioData[12] / 5.0 ;
 	// translate *= 1.0 + cos( time + M_PI * 12.0 * ids / ( rings - 1.0 ) ) * 0.1 *  audioData[8];
 
-	//params
-	// if( ids / rings < 0.3333 ) translate.y *= 1.0 + sin( M_PI * 3.0 * ids / ( rings - 1.0 ) ) * 0.2 * temperature;
-	// if( ids / rings > 0.3333 && ids /  rings < 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( rings - 1.0 ) ) * 0.2 * soil;
-	// if( ids / rings > 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( rings - 1.0 ) ) * -0.2 * air;
-
 	// water
-	interpolate *= 1.0 + snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) ) * waterIntensity;
-	translate += translate * 0.1 * snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) ) * waterIntensity;
+	float waterDist = snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) );
+	interpolate *= 1.0 + waterDist * waterIntensity * 0.4;
+	translate += translate * 0.1 * waterDist * waterIntensity;
 
-	// soil
+	// soil + air
 	float def = snoise( vec2( translate.x / 600.0 + air, translate.y / 600.0 ) );
 	translate += translate * 0.3 * snoise( vec2( translate.x / 900.0 + air, translate.y / 900.0 ) ) * (soil);
 	interpolate *= 1.0 + def * ( soil - 0.25 * soil ) ;

@@ -30,7 +30,7 @@ var Data = function( parent ){
 
 	this.substrate = 0;
 	this.audio = false;
-	
+
 	this.speed = 0.01;
 	this.timeStep = 0;
 
@@ -214,7 +214,7 @@ Data.prototype.step = function( time ){
 
 	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.gui.substrate } );
 	if( this.gui.substrate > 0 ) this.gui.substrate -= 0.001;
-	this.substrate = ( this.substrateAnchor.position.y - this.substrateParticle.position.y ) / 125;
+	this.substrate = 1 + ( this.substrateAnchor.position.y - this.substrateParticle.position.y ) / 125;
 }
 
 module.exports = Data;

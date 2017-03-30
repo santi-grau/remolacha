@@ -96,8 +96,7 @@ Ring.prototype.step = function(time){
 	this.mesh.material.uniforms.waterPhase.value = this.parent.data.waterPhase;
 	this.mesh.material.uniforms.waterStep.value = this.parent.data.waterStep;
 	this.mesh.material.uniforms.lightStep.value = this.parent.data.lightStep;
-
-	this.mesh.material.uniforms.substrate.value = 1 + this.parent.data.substrate;
+	this.mesh.material.uniforms.substrate.value = this.parent.data.substrate;
 	
 	// this.mesh.material.uniforms.audioData.value = this.parent.data.audioData;
 	this.mesh.geometry.attributes.position.needsUpdate = true;
