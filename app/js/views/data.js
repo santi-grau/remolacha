@@ -30,7 +30,7 @@ var Data = function( parent ){
 
 	this.substrate = 0;
 	this.audio = false;
-	this.time = 0;
+	
 	this.speed = 0.01;
 	this.timeStep = 0;
 

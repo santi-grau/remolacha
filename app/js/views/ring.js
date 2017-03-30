@@ -37,8 +37,7 @@ var Ring = function( parent ){
 			lightStep : { value : 0 },
 			substrate : { value : 1 },
 			audioData : { value :[] },
-			rings : { value : this.parent.data.rings },
-			time : { value : 0 }
+			rings : { value : this.parent.data.rings }
 		},
 		transparent : true,
 		vertexShader: lineVs,

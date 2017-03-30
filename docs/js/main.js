@@ -99,69 +99,46 @@ var Data = function( parent ){
 	var _this = this;
 	this.parent = parent;
 
-	this.totalColors = 1;
-
-	this.audioData = [];
-
-	this.idleIntensity = 0.5;
-
-	this.ringRadius = 300;
-	this.segmentRadius = 50;
-
-	this.generators = [];
-	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
-
-	this.substrate = 0;
-	this.light = 0;
-	this.water = 0;
-
+	// main params
+	this.bigRadius = 200;
+	this.ringRadius = 50;
+	this.rings = 512;
+	this.segments = 64;
 	this.pos0 = [];
 	this.pos1 = [];
 	this.pos2 = [];
-
-	this.lightInc = 0.0001;
-	this.lightIsOn = false;
-
-	this.waterIsOn = false;
-
-	this.segments = 64;
-	this.rings = 512;
-
-	this.waterIntensity = 0.5;
+	this.temperature = Math.random();
+	this.soil = Math.random();
+	this.air = Math.random() * 1000;
+	this.airInc = Math.random();
+	this.water = false;
+	this.waterStep = 0.5;
 	this.waterPhase = 300;
+	this.waterIntensity = 0;
+	this.light = false;
+	this.lightStep = Math.random();
+	this.lightInc = 0.0001;
+
+
+	this.substrate = 0;
+	this.audio = false;
+	this.time = 0;
+	this.speed = 0.01;
+	this.timeStep = 0;
+
+	this.audioData = [];
+	this.generators = [];
+	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
 
 	var GuiParameters = function() {
-		this.temperature = 50;
-		this.soil = 50;
-		this.water = 0;
-		this.air = 50;
-		this.light = Math.random();
-		this.addWater = function(){
-			if( !_this.waterIsOn ){
-				TweenMax.to( this, 0.5, { water : 1 });
-				_this.waterInterval = setInterval(function(){
-					TweenMax.to( this, 2.5, { water : 0, ease: Power3.easeOut });
-					_this.waterIsOn = false;
-				}.bind(this), 5000);
-			} else {
-				clearInterval( _this.waterInterval );
-				TweenMax.to( this, 2.5, { water : 0, ease: Power3.easeOut });
-			}
-			
-			_this.waterIsOn = !_this.waterIsOn;
-		}
-		this.switchLight = function(){
-			if( !_this.lightIsOn ){
-				TweenMax.to( _this, 0.5, { lightInc : 0.005 });
-				_this.lightInterval = setInterval(function(){
-					TweenMax.to( _this, 0.5, { lightInc : 0.0001 });
-				}, 5000);
-			} else {
-				clearInterval( _this.lightInterval );
-				TweenMax.to( _this, 0.5, { lightInc : 0.0001 });
-			}
-			_this.lightIsOn = !_this.lightIsOn;
-		}
+		this.bigRadius = _this.bigRadius;
+		this.ringRadius = _this.ringRadius;
+		this.temperature = _this.temperature;
+		this.soil = _this.soil;
+		this.air = _this.airInc;
+		this.water = _this.water;
+		this.light = _this.light;
+
 
 		this.addSubstrate = function(){
 			if( this.substrate < 0.1 ) this.substrate = 0.25;
@@ -187,16 +164,15 @@ var Data = function( parent ){
 
 	this.f1 = gui.addFolder('Main data');
 	
-	this.f1.add( this.gui, 'temperature', 0, 100 ).listen();
-	this.f1.add( this.gui, 'soil', 0, 100 ).listen();
-	this.f1.add( this.gui, 'air', 0, 100 ).listen();
-	this.f1.add( this.gui, 'addWater' );
-	this.f1.add( this.gui, 'water', 0, 1 ).listen().onChange( function( value ){ this.parent.emitter.emit('water', value ); }.bind(this) );
-	this.f1.add( this.gui, 'switchLight' );
-	this.f1.add( this.gui, 'light', 0, 1 ).listen().onChange( function( value ){ this.parent.emitter.emit('light', value ); }.bind(this) );
+	this.f1.add( this.gui, 'bigRadius', 100, 400 ).listen().onChange( function( value ){ _this.bigRadius = value; }.bind(this) );
+	this.f1.add( this.gui, 'ringRadius', 5, 100 ).listen().onChange( function( value ){ _this.ringRadius = value; }.bind(this) );
+	this.f1.add( this.gui, 'temperature', 0, 1 ).listen().onChange( function( value ){ _this.temperature = value; }.bind(this) );
+	this.f1.add( this.gui, 'soil', 0, 1 ).listen().onChange( function( value ){ _this.soil = value; }.bind(this) );
+	this.f1.add( this.gui, 'air', 0, 1 ).listen().onChange( function( value ){ _this.airInc = value; }.bind(this) );
+	this.f1.add( this.gui, 'water' ).listen().onChange( function( value ){ _this.water = value; }.bind(this) );
+	this.f1.add( this.gui, 'light' ).listen().onChange( function( value ){ _this.light = value; }.bind(this) );
 
 	this.f1.add( this.gui, 'addSubstrate' );
-	this.f1.add( this.gui, 'substrate', 0.0, 1.0 ).listen().onChange( function( value ){ this.parent.emitter.emit('substrate', value ); }.bind(this) );
 	this.f1.add( this.gui, 'playPauseAudio');
 
 	this.f1.add( this.gui, 'export');
@@ -252,30 +228,10 @@ Data.prototype.update = function( data ){
 		if( key == 'soil' ) this.gui.soil = param[key];
 
 		if( key == 'water'  ) {
-			if( param[key] ){
-				TweenMax.to( this.gui, 0.5, { water : 1 });
-				_this.waterInterval = setInterval(function(){
-					TweenMax.to( this.gui, 2.5, { water : 0, ease: Power3.easeOut });
-					_this.waterIsOn = false;
-				}.bind(this), 5000);
-			} else {
-				clearInterval( _this.waterInterval );
-				TweenMax.to( this.gui, 2.5, { water : 0, ease: Power3.easeOut });
-			}
-			_this.waterIsOn = !_this.waterIsOn;
+			_this.water = key;
 		}
-
 		if( key == 'light'  ) {
-			if( param[key] ){
-				TweenMax.to( _this, 0.5, { lightInc : 0.005 });
-				_this.lightInterval = setInterval(function(){
-					TweenMax.to( _this, 0.5, { lightInc : 0.0001 });
-				}, 5000);
-			} else {
-				clearInterval( _this.lightInterval );
-				TweenMax.to( _this, 0.5, { lightInc : 0.0001 });
-			}
-			_this.lightIsOn = !_this.lightIsOn;
+			_this.light = key;
 		}
 
 		if( key == 'substrate'  ) {
@@ -301,42 +257,48 @@ Data.prototype.update = function( data ){
 }
 
 Data.prototype.step = function( time ){
-	
-	if( this.gui.light < 1 ) this.gui.light += this.lightInc;
-	else this.gui.light = 0;
 
+	// water
+	if( this.water ) this.waterIntensity += ( 1 - this.waterIntensity ) * 0.05;
+	else this.waterIntensity += ( 0 - this.waterIntensity ) * 0.05;
+
+	this.waterStep += 0.01;
+
+	//light
+	if( this.light ) this.lightInc += ( 0.005 - this.lightInc ) * 0.05;
+	else this.lightInc += ( 0.0001 - this.lightInc ) * 0.05;
+
+	if( this.lightStep < 1 ) this.lightStep += this.lightInc;
+	else this.lightStep = 0;
+
+	//substate
+
+	// audio
 	this.parent.audioSource.sampleAudioStream();
 	
+
+	this.timeStep += this.speed;
+	this.air += 0.0005 + 0.003 * this.airInc;
+
 	for( var i = 0 ; i < 128 ; i++ ){
 		Matter.Body.applyForce( this.stack.bodies[ i ], this.fixed.bodies[ i ].position, { x : 0 , y: -this.parent.audioSource.streamData[i] / 255 } );
-
 		this.audioData[i] = (this.fixed.bodies[ i ].position.y - this.stack.bodies[ i ].position.y) / 125
 	}
-
-	this.idleIntensity =  0.3 + this.audioData[4] * 0.7;
-
-
 
 	for( var j = 0 ; j < 3 ; j++ ){
 		var pos = [], zeropos = [];
 		for( var i = 0 ; i < this.segments ; i++ ){
 			var p = [ Math.cos( Math.PI * 2 * i / ( this.segments ) ), Math.sin( Math.PI * 2 * i / ( this.segments ) ) ];
-
 			if( i == 0 ){
-				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
-				pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
+				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
+				pos.push( p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
 			}
-
-			var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
-			pos.push( p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 );
-
-			if( i == this.segments - 1 ){
-				pos.push( zeropos[0], zeropos[1], 0, zeropos[0], zeropos[1], 0 );
-			}
-
+			var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
+			pos.push( p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
+			if( i == this.segments - 1 ) pos.push( zeropos[0], zeropos[1], 0, zeropos[0], zeropos[1], 0 );	
 			if( i == 0 ){
-				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.idleIntensity * this.segmentRadius / 5;
-				zeropos = [ p[0] * ( this.segmentRadius + n ), p[1] * ( this.segmentRadius + n ), 0 ];
+				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
+				zeropos = [ p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 ];
 			}
 		}
 		this[ 'pos' + j ] = pos;
@@ -473,17 +435,12 @@ var lineVs = require('./../../shaders/lineVs.glsl');
 var lineFs = require('./../../shaders/lineFs.glsl');
 var Work = require('webworkify');
 
-var Ring = function( parent, segmentRadius ){
+var Ring = function( parent ){
 	this.parent = parent;
- 	this.speed = 0.01;
-	this.timeStep = 0;
-	this.segmentRadius = segmentRadius;
-	
-	this.waterStep = 0.5;
 
 	var position = [], ids = [], iids = [];
 
-	for( var j = 0 ; j < this.parent.data.rings ; j++ ){
+	for( var j = 0 ; j < this.parent.data.rings - 1 ; j++ ){
 		for( var i = 0 ; i < this.parent.data.segments + 3 ; i++ ){
 			position.push( 0, 0, 0 );
 			ids.push( j );
@@ -500,20 +457,20 @@ var Ring = function( parent, segmentRadius ){
 
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
-			temperature : { value : this.parent.data.gui.temperature  },
-			soil : { value : this.parent.data.gui.soil  },
-			air : { value : this.parent.data.gui.air  },
+			bigRadius : { value : 0 },
 			pos0 : { value : [] },
 			pos1 : { value : [] },
 			pos2 : { value : [] },
-			light : { value : this.parent.data.gui.light },
+			temperature : { value : 0  },
+			soil : { value : 0  },
+			air : { value : 0  },
+			waterStep : { value : 0 },
+			waterPhase : { value : 0 },
+			waterIntensity : { value : 0 },
+			lightStep : { value : 0 },
 			substrate : { value : 1 },
-			waterStep : { value : this.waterStep },
-			waterIntensity : { value : this.parent.data.waterIntensity },
-			waterPhase : { value : this.parent.data.waterPhase },
-			ringRadius : { value : this.parent.data.ringRadius },
 			audioData : { value :[] },
-			totalCircles : { value : this.parent.data.rings },
+			rings : { value : this.parent.data.rings },
 			time : { value : 0 }
 		},
 		transparent : true,
@@ -522,24 +479,17 @@ var Ring = function( parent, segmentRadius ){
 	} );
 
 	this.mesh = new THREE.Line( geometry, material );
-
-	this.updateColors( );
-
-	this.parent.emitter.on('export', function( value ) {
-		this.export();
-	}.bind(this));
-}
 	
-Ring.prototype.updateColors = function( ){
 	var color = [];
-	for( var j = 0 ; j < this.parent.data.rings; j++ ){
+	for( var j = 0 ; j < this.parent.data.rings - 1; j++ ){
 		color.push(0,0,0,0);
 		for( var i = 0 ; i < this.parent.data.segments ; i++ ) color.push(0,0,0,1);
 		color.push(0,0,0,1,0,0,0,0);
 	}
-	
 	this.mesh.geometry.attributes.color.array = new Float32Array( color );
 	this.mesh.geometry.attributes.color.needsUpdate = true;
+
+	this.parent.emitter.on('export', this.export.bind(this));
 }
 
 Ring.prototype.export = function( ) {
@@ -569,27 +519,21 @@ Ring.prototype.export = function( ) {
 };
 
 Ring.prototype.step = function(time){
-	this.timeStep += this.speed;
-	this.waterStep += 0.001 + this.parent.data.gui.water / 100;
-
-	this.mesh.material.uniforms.substrate.value = 1 + this.parent.data.substrate;
-	this.mesh.material.uniforms.light.value = this.parent.data.gui.light;
-	this.mesh.material.uniforms.waterStep.value = this.waterStep;
-	this.mesh.material.uniforms.waterIntensity.value = 0.1 + 0.9 * this.parent.data.gui.water;
-
-	this.mesh.material.uniforms.waterPhase.value = 300 + 100 * this.parent.data.gui.water;
-
-	this.mesh.material.uniforms.audioData.value = this.parent.data.audioData;
-	this.mesh.material.uniforms.time.value += 0.11;
-
-	this.mesh.material.uniforms.temperature.value = this.parent.data.gui.temperature / 50 - 1;
-	this.mesh.material.uniforms.soil.value = this.parent.data.gui.soil / 50 - 1;
-	this.mesh.material.uniforms.air.value = this.parent.data.gui.air / 50 - 1;
-
+	this.mesh.material.uniforms.bigRadius.value = this.parent.data.bigRadius;
 	this.mesh.material.uniforms.pos0.value = this.parent.data.pos0;
 	this.mesh.material.uniforms.pos1.value = this.parent.data.pos1;
 	this.mesh.material.uniforms.pos2.value = this.parent.data.pos2;
+	this.mesh.material.uniforms.temperature.value = this.parent.data.temperature;
+	this.mesh.material.uniforms.soil.value = this.parent.data.soil;
+	this.mesh.material.uniforms.air.value = this.parent.data.air;
+	this.mesh.material.uniforms.waterIntensity.value = this.parent.data.waterIntensity;
+	this.mesh.material.uniforms.waterPhase.value = this.parent.data.waterPhase;
+	this.mesh.material.uniforms.waterStep.value = this.parent.data.waterStep;
+	this.mesh.material.uniforms.lightStep.value = this.parent.data.lightStep;
+
+	this.mesh.material.uniforms.substrate.value = 1 + this.parent.data.substrate;
 	
+	// this.mesh.material.uniforms.audioData.value = this.parent.data.audioData;
 	this.mesh.geometry.attributes.position.needsUpdate = true;
 }
 
@@ -598,7 +542,7 @@ module.exports = Ring;
 module.exports = "varying vec4 vColor;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ fragment shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main( ){\n\tgl_FragColor = vColor;\n}";
 
 },{}],6:[function(require,module,exports){
-module.exports = "varying vec4 vColor;\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nuniform vec3 pos0[201];\nuniform vec3 pos1[201];\nuniform vec3 pos2[201];\n\nuniform float substrate;\nuniform float temperature;\nuniform float soil;\nuniform float air;\nuniform float totalCircles;\nuniform float ringRadius;\nuniform float time;\nuniform float light;\nuniform float waterStep;\nuniform float waterIntensity;\nuniform float waterPhase;\nuniform float audioData[128];\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | ASHIMA NOISE\n// | Copyright (C) 2011 Ashima Arts. All rights reserved. \n// | Distributed under the MIT License.\n// └────────────────────────────────────────────────────────────────────┘\n#define M_PI 3.1415926535897932384626433832795\nvec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }\nfloat snoise(vec2 v) { \n\tconst vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);\n\tvec2 i = floor(v + dot(v, C.yy) );\n\tvec2 x0 = v - i + dot(i, C.xx);\n\tvec2 i1;\n\ti1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n\tvec4 x12 = x0.xyxy + C.xxzz;\n\tx12.xy -= i1;\n\ti = mod289(i);\n\tvec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));\n\tvec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n\tm = m*m ;\n\tm = m*m ;\n\tvec3 x = 2.0 * fract(p * C.www) - 1.0;\n\tvec3 h = abs(x) - 0.5;\n\tvec3 ox = floor(x + 0.5);\n\tvec3 a0 = x - ox;\n\tm *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\tvec3 g;\n\tg.x  = a0.x  * x0.x  + h.x  * x0.y;\n\tg.yz = a0.yz * x12.xz + h.yz * x12.yw;\n\treturn 130.0 * dot(m, g);\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | HSV2RGB https://github.com/hughsk/glsl-hsv2rgb\n// | No license found. \n// └────────────────────────────────────────────────────────────────────┘\nvec3 hsv2rgb( vec3 c ) {\n\tvec4 K = vec4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );\n\tvec3 p = abs( fract( c.xxx + K.xyz ) * 6.0 - K.www );\n\treturn c.z * mix( K.xxx, clamp( p - K.xxx, 0.0, 1.0 ), c.y );\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ vertex shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main() {\n\t\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\tfloat saturation = 0.9;\n\tfloat balance = 0.7;\n\n\t// vertex colors\n\tif( ids < totalCircles / 2.0 ) vColor.rgb = hsv2rgb( vec3( light + ids / totalCircles / 2.0 , saturation, balance ) );\n\telse vColor.rgb = hsv2rgb( vec3( light + ( totalCircles - ids ) / totalCircles / 2.0 , saturation, balance ) );\n\tvColor.a = color.a;\n\n\t// rings\n\tif( ids < totalCircles * 0.33 ) interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (totalCircles * 0.33);\n\telse if( ids >= totalCircles * 0.33 && ids < totalCircles * 0.66 ) interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (totalCircles * 0.33)) / (totalCircles * 0.33);\n\telse interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (totalCircles * 0.66)) / (totalCircles * 0.33);\n\n\t// ring positions\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), sin( M_PI * 2.0 * ids / (totalCircles - 1.0) ) * ( ringRadius ), 0.0 );\n\t\n\n\t//audio\n\ttranslate.x *= 1.0 + audioData[2] / 5.0 ;\n\ttranslate.y *= 1.0 + audioData[12] / 5.0 ;\n\ttranslate *= 1.0 + cos( time + M_PI * 12.0 * ids / ( totalCircles - 1.0 ) ) * 0.1 *  audioData[8];\n\n\t//params\n\tif( ids / totalCircles < 0.3333 ) translate.y *= 1.0 + sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * 0.2 * temperature;\n\tif( ids / totalCircles > 0.3333 && ids /  totalCircles < 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * 0.2 * soil;\n\tif( ids / totalCircles > 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( totalCircles - 1.0 ) ) * -0.2 * air;\n\n\t// water\n\t// interpolate *= snoise( vec2( translate / waterPhase ) + vec2( waterStep, 0.0 ) ) * waterIntensity + 1.0;\n\n\tinterpolate *= 1.0 + snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) ) * waterIntensity;\n\ttranslate += translate * 0.1 * snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) ) * waterIntensity;\n\n\t// substrate\n\tinterpolate *= substrate;\n\t\n\tfPos = translate + interpolate;\n\n\t// float noise = 1.0;\n\t// fPos = interpolate * substrate * ( snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) );\n\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
+module.exports = "varying vec4 vColor;\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nuniform float bigRadius;\nuniform vec3 pos0[201];\nuniform vec3 pos1[201];\nuniform vec3 pos2[201];\nuniform float temperature;\nuniform float soil;\nuniform float air;\nuniform float waterStep;\nuniform float waterPhase;\nuniform float waterIntensity;\nuniform float lightStep;\nuniform float substrate;\nuniform float audioData[128];\nuniform float rings;\nuniform float time;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | ASHIMA NOISE\n// | Copyright (C) 2011 Ashima Arts. All rights reserved. \n// | Distributed under the MIT License.\n// └────────────────────────────────────────────────────────────────────┘\n#define M_PI 3.1415926535897932384626433832795\nvec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }\nfloat snoise(vec2 v) { \n\tconst vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);\n\tvec2 i = floor(v + dot(v, C.yy) );\n\tvec2 x0 = v - i + dot(i, C.xx);\n\tvec2 i1;\n\ti1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n\tvec4 x12 = x0.xyxy + C.xxzz;\n\tx12.xy -= i1;\n\ti = mod289(i);\n\tvec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));\n\tvec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n\tm = m*m ;\n\tm = m*m ;\n\tvec3 x = 2.0 * fract(p * C.www) - 1.0;\n\tvec3 h = abs(x) - 0.5;\n\tvec3 ox = floor(x + 0.5);\n\tvec3 a0 = x - ox;\n\tm *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\tvec3 g;\n\tg.x  = a0.x  * x0.x  + h.x  * x0.y;\n\tg.yz = a0.yz * x12.xz + h.yz * x12.yw;\n\treturn 130.0 * dot(m, g);\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | HSV2RGB https://github.com/hughsk/glsl-hsv2rgb\n// | No license found. \n// └────────────────────────────────────────────────────────────────────┘\nvec3 hsv2rgb( vec3 c ) {\n\tvec4 K = vec4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );\n\tvec3 p = abs( fract( c.xxx + K.xyz ) * 6.0 - K.www );\n\treturn c.z * mix( K.xxx, clamp( p - K.xxx, 0.0, 1.0 ), c.y );\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ vertex shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main() {\n\t\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\t// vertex colors\n\tif( ids < rings / 2.0 ) vColor.rgb = hsv2rgb( vec3( lightStep + ids / rings / 2.0 , 0.9, 0.7 ) );\n\telse vColor.rgb = hsv2rgb( vec3( lightStep + ( rings - ids ) / rings / 2.0 , 0.9, 0.7 ) );\n\tvColor.a = color.a;\n\n\t// rings\n\tif( ids < rings * 0.33 ) interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (rings * 0.33);\n\telse if( ids >= rings * 0.33 && ids < rings * 0.66 ) interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (rings * 0.33)) / (rings * 0.33);\n\telse interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (rings * 0.66)) / (rings * 0.33);\n\n\t// ring positions\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), sin( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), 0.0 );\n\t\n\n\t//audio\n\t// translate.x *= 1.0 + audioData[2] / 5.0 ;\n\t// translate.y *= 1.0 + audioData[12] / 5.0 ;\n\t// translate *= 1.0 + cos( time + M_PI * 12.0 * ids / ( rings - 1.0 ) ) * 0.1 *  audioData[8];\n\n\t//params\n\t// if( ids / rings < 0.3333 ) translate.y *= 1.0 + sin( M_PI * 3.0 * ids / ( rings - 1.0 ) ) * 0.2 * temperature;\n\t// if( ids / rings > 0.3333 && ids /  rings < 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( rings - 1.0 ) ) * 0.2 * soil;\n\t// if( ids / rings > 0.6666 ) translate.x *= 1.0 - sin( M_PI * 3.0 * ids / ( rings - 1.0 ) ) * -0.2 * air;\n\n\t// water\n\tinterpolate *= 1.0 + snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) ) * waterIntensity;\n\ttranslate += translate * 0.1 * snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) ) * waterIntensity;\n\n\t// soil\n\tfloat def = snoise( vec2( translate.x / 600.0 + air, translate.y / 600.0 ) );\n\ttranslate += translate * 0.3 * snoise( vec2( translate.x / 900.0 + air, translate.y / 900.0 ) ) * (soil);\n\tinterpolate *= 1.0 + def * ( soil - 0.25 * soil ) ;\n\n\t// substrate\n\tinterpolate *= substrate;\n\t\n\tfPos = translate + interpolate;\n\n\t// float noise = 1.0;\n\t// fPos = interpolate * substrate * ( snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) );\n\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
 
 },{}],7:[function(require,module,exports){
 module.exports = require('./vendor/dat.gui')

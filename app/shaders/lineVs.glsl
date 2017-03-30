@@ -18,7 +18,6 @@ uniform float lightStep;
 uniform float substrate;
 uniform float audioData[128];
 uniform float rings;
-uniform float time;
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | ASHIMA NOISE
