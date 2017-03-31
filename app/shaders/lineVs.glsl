@@ -100,7 +100,7 @@ void main() {
 	interpolate *= 1.0 + def * ( soil - 0.25 * soil ) ;
 
 	// substrate
-	interpolate *= substrate;
+	// interpolate *= substrate;
 	
 	fPos = translate + interpolate;
 

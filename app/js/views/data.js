@@ -9,7 +9,9 @@ var Data = function( parent ){
 
 	// main params
 	this.bigRadius = 200;
+	this.extRadius = 200;
 	this.ringRadius = 50;
+	this.intRadius = 50;
 	this.rings = 512;
 	this.segments = 64;
 	this.pos0 = [];
@@ -26,8 +28,7 @@ var Data = function( parent ){
 	this.light = false;
 	this.lightStep = Math.random();
 	this.lightInc = 0.0001;
-
-
+	
 	this.substrate = 0;
 	this.audio = false;
 
@@ -39,8 +40,8 @@ var Data = function( parent ){
 	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
 
 	var GuiParameters = function() {
-		this.bigRadius = _this.bigRadius;
-		this.ringRadius = _this.ringRadius;
+		this.extRadius = _this.extRadius;
+		this.intRadius = _this.intRadius;
 		this.temperature = _this.temperature;
 		this.soil = _this.soil;
 		this.air = _this.airInc;
@@ -71,18 +72,15 @@ var Data = function( parent ){
 	var gui = new Dat.GUI();
 
 	this.f1 = gui.addFolder('Main data');
-	
-	this.f1.add( this.gui, 'bigRadius', 100, 400 ).listen().onChange( function( value ){ _this.bigRadius = value; }.bind(this) );
-	this.f1.add( this.gui, 'ringRadius', 5, 100 ).listen().onChange( function( value ){ _this.ringRadius = value; }.bind(this) );
+	this.f1.add( this.gui, 'extRadius', 100, 400 ).listen().onChange( function( value ){ _this.extRadius = value; }.bind(this) );
+	this.f1.add( this.gui, 'intRadius', 5, 100 ).listen().onChange( function( value ){ _this.intRadius = value; }.bind(this) );
 	this.f1.add( this.gui, 'temperature', 0, 1 ).listen().onChange( function( value ){ _this.temperature = value; }.bind(this) );
 	this.f1.add( this.gui, 'soil', 0, 1 ).listen().onChange( function( value ){ _this.soil = value; }.bind(this) );
 	this.f1.add( this.gui, 'air', 0, 1 ).listen().onChange( function( value ){ _this.airInc = value; }.bind(this) );
 	this.f1.add( this.gui, 'water' ).listen().onChange( function( value ){ _this.water = value; }.bind(this) );
 	this.f1.add( this.gui, 'light' ).listen().onChange( function( value ){ _this.light = value; }.bind(this) );
-
 	this.f1.add( this.gui, 'addSubstrate' );
 	this.f1.add( this.gui, 'playPauseAudio');
-
 	this.f1.add( this.gui, 'export');
 
 	this.f1.open();
@@ -179,12 +177,16 @@ Data.prototype.step = function( time ){
 	if( this.lightStep < 1 ) this.lightStep += this.lightInc;
 	else this.lightStep = 0;
 
-	//substate
+	//substrate
+	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.gui.substrate } );
+	if( this.gui.substrate > 0 ) this.gui.substrate -= 0.001;
+	this.substrate = ( this.substrateAnchor.position.y - this.substrateParticle.position.y ) / 250;
+	this.bigRadius = this.extRadius + this.extRadius * this.substrate;
+	this.ringRadius = this.intRadius + this.intRadius * this.substrate;
 
 	// audio
 	this.parent.audioSource.sampleAudioStream();
 	
-
 	this.timeStep += this.speed;
 	this.air += 0.0005 + 0.003 * this.airInc;
 
@@ -212,9 +214,6 @@ Data.prototype.step = function( time ){
 		this[ 'pos' + j ] = pos;
 	}
 
-	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.gui.substrate } );
-	if( this.gui.substrate > 0 ) this.gui.substrate -= 0.001;
-	this.substrate = 1 + ( this.substrateAnchor.position.y - this.substrateParticle.position.y ) / 125;
 }
 
 module.exports = Data;
