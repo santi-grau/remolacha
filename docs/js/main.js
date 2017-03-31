@@ -101,7 +101,9 @@ var Data = function( parent ){
 
 	// main params
 	this.bigRadius = 200;
+	this.extRadius = 200;
 	this.ringRadius = 50;
+	this.intRadius = 50;
 	this.rings = 512;
 	this.segments = 64;
 	this.pos0 = [];
@@ -118,9 +120,8 @@ var Data = function( parent ){
 	this.light = false;
 	this.lightStep = Math.random();
 	this.lightInc = 0.0001;
-
-
 	this.substrate = 0;
+	this.substrateInc = 0;
 	this.audio = false;
 
 	this.speed = 0.01;
@@ -131,22 +132,17 @@ var Data = function( parent ){
 	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
 
 	var GuiParameters = function() {
-		this.bigRadius = _this.bigRadius;
-		this.ringRadius = _this.ringRadius;
+		this.extRadius = _this.extRadius;
+		this.intRadius = _this.intRadius;
 		this.temperature = _this.temperature;
 		this.soil = _this.soil;
 		this.air = _this.airInc;
 		this.water = _this.water;
 		this.light = _this.light;
 
-
-		this.addSubstrate = function(){
-			if( this.substrate < 0.1 ) this.substrate = 0.25;
-			else if( this.substrate > 0 && this.substrate < 0.25 ) this.substrate = 0.5;
-			else if( this.substrate >= 0.25 && this.substrate < 0.5 ) this.substrate = 0.75;
-			else this.substrate = 1;
+		this.substrate = function(){
+			_this.addSubstrate();
 		}
-		this.substrate = 0.0;
 
 		this.export = function(){
 			_this.parent.emitter.emit('export', true );
@@ -163,18 +159,15 @@ var Data = function( parent ){
 	var gui = new Dat.GUI();
 
 	this.f1 = gui.addFolder('Main data');
-	
-	this.f1.add( this.gui, 'bigRadius', 100, 400 ).listen().onChange( function( value ){ _this.bigRadius = value; }.bind(this) );
-	this.f1.add( this.gui, 'ringRadius', 5, 100 ).listen().onChange( function( value ){ _this.ringRadius = value; }.bind(this) );
+	this.f1.add( this.gui, 'extRadius', 100, 400 ).listen().onChange( function( value ){ _this.extRadius = value; }.bind(this) );
+	this.f1.add( this.gui, 'intRadius', 5, 100 ).listen().onChange( function( value ){ _this.intRadius = value; }.bind(this) );
 	this.f1.add( this.gui, 'temperature', 0, 1 ).listen().onChange( function( value ){ _this.temperature = value; }.bind(this) );
 	this.f1.add( this.gui, 'soil', 0, 1 ).listen().onChange( function( value ){ _this.soil = value; }.bind(this) );
 	this.f1.add( this.gui, 'air', 0, 1 ).listen().onChange( function( value ){ _this.airInc = value; }.bind(this) );
 	this.f1.add( this.gui, 'water' ).listen().onChange( function( value ){ _this.water = value; }.bind(this) );
 	this.f1.add( this.gui, 'light' ).listen().onChange( function( value ){ _this.light = value; }.bind(this) );
-
-	this.f1.add( this.gui, 'addSubstrate' );
+	this.f1.add( this.gui, 'substrate' );
 	this.f1.add( this.gui, 'playPauseAudio');
-
 	this.f1.add( this.gui, 'export');
 
 	this.f1.open();
@@ -189,7 +182,7 @@ var Data = function( parent ){
 			background : '#ffffff00',
 			wireframeBackground : "#ffffff00",
 			showCollisions : true,
-			pixelRatio : 2,
+			pixelRatio : 1,
 			width : this.parent.containerEl.offsetWidth,
 			height : this.parent.containerEl.offsetHeight
 		}
@@ -199,7 +192,6 @@ var Data = function( parent ){
 	this.substrateAnchor = Matter.Bodies.circle( this.parent.containerEl.offsetWidth / 2, this.parent.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
 	Matter.Body.setStatic(this.substrateAnchor, true );
 	Matter.World.add(engine.world, Matter.Constraint.create({bodyA: this.substrateParticle, pointA: { x: 0, y: 0 }, bodyB: this.substrateAnchor, pointB: { x: 0, y: 0 }, stiffness: .05, render: { strokeWidth : .01, strokeStyle:'#00ffff'}}));
-
 
 	this.stack = Matter.Composite.create();
 	this.fixed = Matter.Composite.create();
@@ -227,19 +219,10 @@ Data.prototype.update = function( data ){
 		if( key == 'air' ) this.gui.air = param[key];
 		if( key == 'soil' ) this.gui.soil = param[key];
 
-		if( key == 'water'  ) {
-			_this.water = key;
-		}
-		if( key == 'light'  ) {
-			_this.light = key;
-		}
+		if( key == 'water'  ) _this.water = key;
+		if( key == 'light'  ) _this.light = key;
 
-		if( key == 'substrate'  ) {
-			if( this.gui.substrate < 0.1 ) this.gui.substrate = 0.25;
-			else if( this.gui.substrate > 0 && this.gui.substrate < 0.25 ) this.gui.substrate = 0.5;
-			else if( this.gui.substrate >= 0.25 && this.gui.substrate < 0.5 ) this.gui.substrate = 0.75;
-			else this.gui.substrate = 1;
-		}
+		if( key == 'substrate'  ) this.addSubstrate();
 
 		if( key == 'audio'  ) {
 			if( param[key] ){
@@ -256,27 +239,33 @@ Data.prototype.update = function( data ){
 	}
 }
 
+Data.prototype.addSubstrate = function(){
+	if( this.substrateInc < 0.1 ) this.substrateInc = 0.25;
+	else if( this.substrateInc > 0 && this.substrateInc < 0.25 ) this.substrateInc = 0.5;
+	else if( this.substrateInc >= 0.25 && this.substrateInc < 0.5 ) this.substrateInc = 0.75;
+	else this.substrateInc = 1;
+}
+
 Data.prototype.step = function( time ){
 
 	// water
-	if( this.water ) this.waterIntensity += ( 1 - this.waterIntensity ) * 0.05;
-	else this.waterIntensity += ( 0 - this.waterIntensity ) * 0.05;
-
 	this.waterStep += 0.01;
+	this.waterIntensity += ( this.water - this.waterIntensity ) * 0.05;
 
 	//light
-	if( this.light ) this.lightInc += ( 0.005 - this.lightInc ) * 0.05;
-	else this.lightInc += ( 0.0001 - this.lightInc ) * 0.05;
+	this.lightInc += ( Math.max( Math.min( this.light, 0.005 ), 0.0001 ) - this.lightInc ) * 0.05;
+	this.lightStep += ( this.lightStep < 1 ) && this.lightInc || 0;
 
-	if( this.lightStep < 1 ) this.lightStep += this.lightInc;
-	else this.lightStep = 0;
-
-	//substate
+	//substrate
+	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.substrateInc } );
+	if( this.substrateInc > 0 ) this.substrateInc -= 0.001;
+	this.substrate = ( this.substrateAnchor.position.y - this.substrateParticle.position.y ) / 250;
+	this.bigRadius = this.extRadius + this.extRadius * this.substrate;
+	this.ringRadius = this.intRadius + this.intRadius * this.substrate;
 
 	// audio
 	this.parent.audioSource.sampleAudioStream();
 	
-
 	this.timeStep += this.speed;
 	this.air += 0.0005 + 0.003 * this.airInc;
 
@@ -304,9 +293,6 @@ Data.prototype.step = function( time ){
 		this[ 'pos' + j ] = pos;
 	}
 
-	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.gui.substrate } );
-	if( this.gui.substrate > 0 ) this.gui.substrate -= 0.001;
-	this.substrate = 1 + ( this.substrateAnchor.position.y - this.substrateParticle.position.y ) / 125;
 }
 
 module.exports = Data;
@@ -540,7 +526,7 @@ module.exports = Ring;
 module.exports = "varying vec4 vColor;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ fragment shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main( ){\n\tgl_FragColor = vColor;\n}";
 
 },{}],6:[function(require,module,exports){
-module.exports = "varying vec4 vColor;\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nuniform float bigRadius;\nuniform vec3 pos0[201];\nuniform vec3 pos1[201];\nuniform vec3 pos2[201];\nuniform float temperature;\nuniform float soil;\nuniform float air;\nuniform float waterStep;\nuniform float waterPhase;\nuniform float waterIntensity;\nuniform float lightStep;\nuniform float substrate;\nuniform float audioData[128];\nuniform float rings;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | ASHIMA NOISE\n// | Copyright (C) 2011 Ashima Arts. All rights reserved. \n// | Distributed under the MIT License.\n// └────────────────────────────────────────────────────────────────────┘\n#define M_PI 3.1415926535897932384626433832795\nvec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }\nfloat snoise(vec2 v) { \n\tconst vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);\n\tvec2 i = floor(v + dot(v, C.yy) );\n\tvec2 x0 = v - i + dot(i, C.xx);\n\tvec2 i1;\n\ti1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n\tvec4 x12 = x0.xyxy + C.xxzz;\n\tx12.xy -= i1;\n\ti = mod289(i);\n\tvec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));\n\tvec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n\tm = m*m ;\n\tm = m*m ;\n\tvec3 x = 2.0 * fract(p * C.www) - 1.0;\n\tvec3 h = abs(x) - 0.5;\n\tvec3 ox = floor(x + 0.5);\n\tvec3 a0 = x - ox;\n\tm *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\tvec3 g;\n\tg.x  = a0.x  * x0.x  + h.x  * x0.y;\n\tg.yz = a0.yz * x12.xz + h.yz * x12.yw;\n\treturn 130.0 * dot(m, g);\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | HSV2RGB https://github.com/hughsk/glsl-hsv2rgb\n// | No license found. \n// └────────────────────────────────────────────────────────────────────┘\nvec3 hsv2rgb( vec3 c ) {\n\tvec4 K = vec4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );\n\tvec3 p = abs( fract( c.xxx + K.xyz ) * 6.0 - K.www );\n\treturn c.z * mix( K.xxx, clamp( p - K.xxx, 0.0, 1.0 ), c.y );\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ vertex shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main() {\n\t\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\t// vertex colors\n\tif( ids < rings / 2.0 ) vColor.rgb = hsv2rgb( vec3( lightStep + ids / rings / 2.0 , 0.9, 0.7 ) );\n\telse vColor.rgb = hsv2rgb( vec3( lightStep + ( rings - ids ) / rings / 2.0 , 0.9, 0.7 ) );\n\tvColor.a = color.a;\n\n\t// rings\n\tif( ids < rings * 0.33 ) interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (rings * 0.33);\n\telse if( ids >= rings * 0.33 && ids < rings * 0.66 ) interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (rings * 0.33)) / (rings * 0.33);\n\telse interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (rings * 0.66)) / (rings * 0.33);\n\n\t// ring positions\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), sin( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), 0.0 );\n\t\n\n\t//audio\n\t// translate.x *= 1.0 + audioData[2] / 5.0 ;\n\t// translate.y *= 1.0 + audioData[12] / 5.0 ;\n\t// translate *= 1.0 + cos( time + M_PI * 12.0 * ids / ( rings - 1.0 ) ) * 0.1 *  audioData[8];\n\n\t// water\n\tfloat waterDist = snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) );\n\tinterpolate *= 1.0 + waterDist * waterIntensity * 0.4;\n\ttranslate += translate * 0.1 * waterDist * waterIntensity;\n\n\t// soil + air\n\tfloat def = snoise( vec2( translate.x / 600.0 + air, translate.y / 600.0 ) );\n\ttranslate += translate * 0.3 * snoise( vec2( translate.x / 900.0 + air, translate.y / 900.0 ) ) * (soil);\n\tinterpolate *= 1.0 + def * ( soil - 0.25 * soil ) ;\n\n\t// substrate\n\tinterpolate *= substrate;\n\t\n\tfPos = translate + interpolate;\n\n\t// float noise = 1.0;\n\t// fPos = interpolate * substrate * ( snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) );\n\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
+module.exports = "varying vec4 vColor;\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nuniform float bigRadius;\nuniform vec3 pos0[201];\nuniform vec3 pos1[201];\nuniform vec3 pos2[201];\nuniform float temperature;\nuniform float soil;\nuniform float air;\nuniform float waterStep;\nuniform float waterPhase;\nuniform float waterIntensity;\nuniform float lightStep;\nuniform float substrate;\nuniform float audioData[128];\nuniform float rings;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | ASHIMA NOISE\n// | Copyright (C) 2011 Ashima Arts. All rights reserved. \n// | Distributed under the MIT License.\n// └────────────────────────────────────────────────────────────────────┘\n#define M_PI 3.1415926535897932384626433832795\nvec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }\nfloat snoise(vec2 v) { \n\tconst vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);\n\tvec2 i = floor(v + dot(v, C.yy) );\n\tvec2 x0 = v - i + dot(i, C.xx);\n\tvec2 i1;\n\ti1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n\tvec4 x12 = x0.xyxy + C.xxzz;\n\tx12.xy -= i1;\n\ti = mod289(i);\n\tvec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));\n\tvec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n\tm = m*m ;\n\tm = m*m ;\n\tvec3 x = 2.0 * fract(p * C.www) - 1.0;\n\tvec3 h = abs(x) - 0.5;\n\tvec3 ox = floor(x + 0.5);\n\tvec3 a0 = x - ox;\n\tm *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\tvec3 g;\n\tg.x  = a0.x  * x0.x  + h.x  * x0.y;\n\tg.yz = a0.yz * x12.xz + h.yz * x12.yw;\n\treturn 130.0 * dot(m, g);\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | HSV2RGB https://github.com/hughsk/glsl-hsv2rgb\n// | No license found. \n// └────────────────────────────────────────────────────────────────────┘\nvec3 hsv2rgb( vec3 c ) {\n\tvec4 K = vec4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );\n\tvec3 p = abs( fract( c.xxx + K.xyz ) * 6.0 - K.www );\n\treturn c.z * mix( K.xxx, clamp( p - K.xxx, 0.0, 1.0 ), c.y );\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ vertex shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main() {\n\t\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\t// vertex colors\n\tif( ids < rings / 2.0 ) vColor.rgb = hsv2rgb( vec3( lightStep + ids / rings / 2.0 , 0.9, 0.7 ) );\n\telse vColor.rgb = hsv2rgb( vec3( lightStep + ( rings - ids ) / rings / 2.0 , 0.9, 0.7 ) );\n\tvColor.a = color.a;\n\n\t// rings\n\tif( ids < rings * 0.33 ) interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (rings * 0.33);\n\telse if( ids >= rings * 0.33 && ids < rings * 0.66 ) interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (rings * 0.33)) / (rings * 0.33);\n\telse interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (rings * 0.66)) / (rings * 0.33);\n\n\t// ring positions\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), sin( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), 0.0 );\n\t\n\n\t//audio\n\t// translate.x *= 1.0 + audioData[2] / 5.0 ;\n\t// translate.y *= 1.0 + audioData[12] / 5.0 ;\n\t// translate *= 1.0 + cos( time + M_PI * 12.0 * ids / ( rings - 1.0 ) ) * 0.1 *  audioData[8];\n\n\t// water\n\tfloat waterDist = snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) );\n\tinterpolate *= 1.0 + waterDist * waterIntensity * 0.4;\n\ttranslate += translate * 0.1 * waterDist * waterIntensity;\n\n\t// soil + air\n\tfloat def = snoise( vec2( translate.x / 600.0 + air, translate.y / 600.0 ) );\n\ttranslate += translate * 0.3 * snoise( vec2( translate.x / 900.0 + air, translate.y / 900.0 ) ) * (soil);\n\tinterpolate *= 1.0 + def * ( soil - 0.25 * soil ) ;\n\n\t// substrate\n\t// interpolate *= substrate;\n\t\n\tfPos = translate + interpolate;\n\n\t// float noise = 1.0;\n\t// fPos = interpolate * substrate * ( snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) );\n\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
 
 },{}],7:[function(require,module,exports){
 module.exports = require('./vendor/dat.gui')

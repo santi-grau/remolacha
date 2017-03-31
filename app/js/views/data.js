@@ -28,8 +28,8 @@ var Data = function( parent ){
 	this.light = false;
 	this.lightStep = Math.random();
 	this.lightInc = 0.0001;
-	
 	this.substrate = 0;
+	this.substrateInc = 0;
 	this.audio = false;
 
 	this.speed = 0.01;
@@ -48,14 +48,9 @@ var Data = function( parent ){
 		this.water = _this.water;
 		this.light = _this.light;
 
-
-		this.addSubstrate = function(){
-			if( this.substrate < 0.1 ) this.substrate = 0.25;
-			else if( this.substrate > 0 && this.substrate < 0.25 ) this.substrate = 0.5;
-			else if( this.substrate >= 0.25 && this.substrate < 0.5 ) this.substrate = 0.75;
-			else this.substrate = 1;
+		this.substrate = function(){
+			_this.addSubstrate();
 		}
-		this.substrate = 0.0;
 
 		this.export = function(){
 			_this.parent.emitter.emit('export', true );
@@ -79,7 +74,7 @@ var Data = function( parent ){
 	this.f1.add( this.gui, 'air', 0, 1 ).listen().onChange( function( value ){ _this.airInc = value; }.bind(this) );
 	this.f1.add( this.gui, 'water' ).listen().onChange( function( value ){ _this.water = value; }.bind(this) );
 	this.f1.add( this.gui, 'light' ).listen().onChange( function( value ){ _this.light = value; }.bind(this) );
-	this.f1.add( this.gui, 'addSubstrate' );
+	this.f1.add( this.gui, 'substrate' );
 	this.f1.add( this.gui, 'playPauseAudio');
 	this.f1.add( this.gui, 'export');
 
@@ -95,7 +90,7 @@ var Data = function( parent ){
 			background : '#ffffff00',
 			wireframeBackground : "#ffffff00",
 			showCollisions : true,
-			pixelRatio : 2,
+			pixelRatio : 1,
 			width : this.parent.containerEl.offsetWidth,
 			height : this.parent.containerEl.offsetHeight
 		}
@@ -105,7 +100,6 @@ var Data = function( parent ){
 	this.substrateAnchor = Matter.Bodies.circle( this.parent.containerEl.offsetWidth / 2, this.parent.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
 	Matter.Body.setStatic(this.substrateAnchor, true );
 	Matter.World.add(engine.world, Matter.Constraint.create({bodyA: this.substrateParticle, pointA: { x: 0, y: 0 }, bodyB: this.substrateAnchor, pointB: { x: 0, y: 0 }, stiffness: .05, render: { strokeWidth : .01, strokeStyle:'#00ffff'}}));
-
 
 	this.stack = Matter.Composite.create();
 	this.fixed = Matter.Composite.create();
@@ -133,19 +127,10 @@ Data.prototype.update = function( data ){
 		if( key == 'air' ) this.gui.air = param[key];
 		if( key == 'soil' ) this.gui.soil = param[key];
 
-		if( key == 'water'  ) {
-			_this.water = key;
-		}
-		if( key == 'light'  ) {
-			_this.light = key;
-		}
+		if( key == 'water'  ) _this.water = key;
+		if( key == 'light'  ) _this.light = key;
 
-		if( key == 'substrate'  ) {
-			if( this.gui.substrate < 0.1 ) this.gui.substrate = 0.25;
-			else if( this.gui.substrate > 0 && this.gui.substrate < 0.25 ) this.gui.substrate = 0.5;
-			else if( this.gui.substrate >= 0.25 && this.gui.substrate < 0.5 ) this.gui.substrate = 0.75;
-			else this.gui.substrate = 1;
-		}
+		if( key == 'substrate'  ) this.addSubstrate();
 
 		if( key == 'audio'  ) {
 			if( param[key] ){
@@ -162,24 +147,26 @@ Data.prototype.update = function( data ){
 	}
 }
 
+Data.prototype.addSubstrate = function(){
+	if( this.substrateInc < 0.1 ) this.substrateInc = 0.25;
+	else if( this.substrateInc > 0 && this.substrateInc < 0.25 ) this.substrateInc = 0.5;
+	else if( this.substrateInc >= 0.25 && this.substrateInc < 0.5 ) this.substrateInc = 0.75;
+	else this.substrateInc = 1;
+}
+
 Data.prototype.step = function( time ){
 
 	// water
-	if( this.water ) this.waterIntensity += ( 1 - this.waterIntensity ) * 0.05;
-	else this.waterIntensity += ( 0 - this.waterIntensity ) * 0.05;
-
 	this.waterStep += 0.01;
+	this.waterIntensity += ( this.water - this.waterIntensity ) * 0.05;
 
 	//light
-	if( this.light ) this.lightInc += ( 0.005 - this.lightInc ) * 0.05;
-	else this.lightInc += ( 0.0001 - this.lightInc ) * 0.05;
-
-	if( this.lightStep < 1 ) this.lightStep += this.lightInc;
-	else this.lightStep = 0;
+	this.lightInc += ( Math.max( Math.min( this.light, 0.005 ), 0.0001 ) - this.lightInc ) * 0.05;
+	this.lightStep += ( this.lightStep < 1 ) && this.lightInc || 0;
 
 	//substrate
-	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.gui.substrate } );
-	if( this.gui.substrate > 0 ) this.gui.substrate -= 0.001;
+	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.substrateInc } );
+	if( this.substrateInc > 0 ) this.substrateInc -= 0.001;
 	this.substrate = ( this.substrateAnchor.position.y - this.substrateParticle.position.y ) / 250;
 	this.bigRadius = this.extRadius + this.extRadius * this.substrate;
 	this.ringRadius = this.intRadius + this.intRadius * this.substrate;
