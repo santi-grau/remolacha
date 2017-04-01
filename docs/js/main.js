@@ -60,9 +60,11 @@ var App = function() {
 	this.containerEl.appendChild( this.renderer.domElement );
 
 	this.scene = new THREE.Scene();
-	this.camera = new THREE.PerspectiveCamera( 20, this.containerEl.offsetWidth / this.containerEl.offsetHeight, .1, 10000 );
-
+	this.camera = new THREE.OrthographicCamera( );
+	console.log(this.camera);
 	this.scene.add( this.ring.mesh );
+
+	// this.scene.add( this.ring.plane );
 
 	window.onresize = this.onResize.bind( this );
 
@@ -74,14 +76,17 @@ var App = function() {
 App.prototype.onResize = function(e) {
 	this.renderer.setSize( this.containerEl.offsetWidth * 2, this.containerEl.offsetHeight * 2 );
 	this.renderer.domElement.setAttribute( 'style', 'width:' + this.containerEl.offsetWidth + 'px; height:' + this.containerEl.offsetHeight + 'px' );
-	var vFOV = this.camera.fov * Math.PI / 180;
-	this.camera.position.z = this.containerEl.offsetHeight / ( 2 * Math.tan( vFOV / 2 ) );
+	this.camera.left = this.containerEl.offsetWidth / - 2;
+	this.camera.right = this.containerEl.offsetWidth / 2;
+	this.camera.top = this.containerEl.offsetHeight / 2;
+	this.camera.bottom = this.containerEl.offsetHeight / - 2;
+	this.camera.position.z = 1;
 	this.camera.updateProjectionMatrix();
 }
 
 App.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
-
+	if( this.ring.exporting ) return false;
 	
 	this.data.step( time );
 	this.ring.step( time );
@@ -89,7 +94,7 @@ App.prototype.step = function( time ) {
 };
 
 var app = new App();
-},{"./views/data":2,"./views/ring":4,"events":10,"gsap":11,"three":14}],2:[function(require,module,exports){
+},{"./views/data":2,"./views/ring":4,"events":11,"gsap":12,"three":15}],2:[function(require,module,exports){
 var Dat = require('dat-gui');
 var Matter = require('matter-js');
 var TweenMax = require('gsap');
@@ -296,13 +301,13 @@ Data.prototype.step = function( time ){
 }
 
 module.exports = Data;
-},{"dat-gui":7,"gsap":11,"matter-js":12,"simplex-noise":13}],3:[function(require,module,exports){
-var SimplexNoise = require('simplex-noise');
+},{"dat-gui":8,"gsap":12,"matter-js":13,"simplex-noise":14}],3:[function(require,module,exports){
+ // var SimplexNoise = require('simplex-noise');
 
 var Export = function( ){
 	self.addEventListener('message',function (ev){
 
-		var noise = new SimplexNoise( );
+		
 
 		function HSVtoRGB(h, s, v) {
 			var r, g, b, i, f, p, q, t;
@@ -325,85 +330,152 @@ var Export = function( ){
 			return Math.round(r * 255) +','+ Math.round(g * 255)+','+ Math.round(b * 255)
 		}
 
+		function SimplexNoise2D() {
+			this.perm = new Int32Array([0, 35, 138, 20, 259, 277, 74, 228, 161, 162, 231, 79, 284, 268, 31, 151, 50, 17, 52, 155, 37, 276, 5, 91, 245, 178, 179, 248, 96, 12, 285, 48, 168, 67, 34, 69, 172, 54, 4, 22, 108, 262, 195, 196, 265, 113, 29, 13, 65, 185, 84, 51, 86, 189, 71, 21, 39, 125, 279, 212, 213, 282, 130, 46, 30, 82, 202, 101, 68, 103, 206, 88, 38, 56, 142, 7, 229, 230, 10, 147, 63, 47, 99, 219, 118, 85, 120, 223, 105, 55, 73, 159, 24, 246, 247, 27, 164, 80, 64, 116, 236, 135, 102, 137, 240, 122, 72, 90, 176, 41, 263, 264, 44, 181, 97, 81, 133, 253, 152, 119, 154, 257, 139, 89, 107, 193, 58, 280, 281, 61, 198, 114, 98, 150, 270, 169, 136, 171, 274, 156, 106, 124, 210, 75, 8, 9, 78, 215, 131, 115, 167, 287, 186, 153, 188, 2, 173, 123, 141, 227, 92, 25, 26, 95, 232, 148, 132, 184, 15, 203, 170, 205, 19, 190, 140, 158, 244, 109, 42, 43, 112, 249, 165, 149, 201, 32, 220, 187, 222, 36, 207, 157, 175, 261, 126, 59, 60, 129, 266, 182, 166, 218, 49, 237, 204, 239, 53, 224, 174, 192, 278, 143, 76, 77, 146, 283, 199, 183, 235, 66, 254, 221, 256, 70, 241, 191, 209, 6, 160, 93, 94, 163, 11, 216, 200, 252, 83, 271, 238, 273, 87, 258, 208, 226, 23, 177, 110, 111, 180, 28, 233, 217, 269, 100, 288, 255, 1, 104, 275, 225, 243, 40, 194, 127, 128, 197, 45, 250, 234, 286, 117, 16, 272, 18, 121, 3, 242, 260, 57, 211, 144, 145, 214, 62, 267, 251, 14, 134, 33, 0, 35, 138, 20, 259, 277, 74, 228, 161, 162, 231, 79, 284, 268, 31, 151, 50, 17, 52, 155, 37, 276, 5, 91, 245, 178, 179, 248, 96, 12, 285, 48, 168, 67, 34, 69, 172, 54, 4, 22, 108, 262, 195, 196, 265, 113, 29, 13, 65, 185, 84, 51, 86, 189, 71, 21, 39, 125, 279, 212, 213, 282, 130, 46, 30, 82, 202, 101, 68, 103, 206, 88, 38, 56, 142, 7, 229, 230, 10, 147, 63, 47, 99, 219, 118, 85, 120, 223, 105, 55, 73, 159, 24, 246, 247, 27, 164, 80, 64, 116, 236, 135, 102, 137, 240, 122, 72, 90, 176, 41, 263, 264, 44, 181, 97, 81, 133, 253, 152, 119, 154, 257, 139, 89, 107, 193, 58, 280, 281, 61, 198, 114, 98, 150, 270, 169, 136, 171, 274, 156, 106, 124, 210, 75, 8, 9, 78, 215, 131, 115, 167, 287, 186, 153, 188, 2, 173, 123, 141, 227, 92, 25, 26, 95, 232, 148, 132, 184, 15, 203, 170, 205, 19, 190, 140, 158, 244, 109, 42, 43, 112, 249, 165, 149, 201, 32, 220, 187, 222, 36, 207, 157, 175, 261, 126, 59, 60, 129, 266, 182, 166, 218, 49, 237, 204, 239, 53, 224, 174, 192, 278, 143, 76, 77, 146, 283, 199, 183, 235, 66, 254, 221, 256]);
+			this.mod289_temp0 = 0.0034602077212184668;//1.0 / 289.0;
+		}
+
+		SimplexNoise2D.prototype.snoise = function(inX, inY) {
+			var perm = this.perm, mod289_temp0 = this.mod289_temp0;
+			var i_0 = Math.floor(inX + (inX + inY) * 0.366025403784439);
+			var i_1 = Math.floor(inY + (inX + inY) * 0.366025403784439);
+			var x0_0 = inX - i_0 + (i_0 + i_1) * 0.211324865405187;
+			var x0_1 = inY - i_1 + (i_0 + i_1) * 0.211324865405187;
+			var i1_0 = (x0_0 > x0_1) ? 1.0 : 0.0;
+			var i1_1 = (x0_0 > x0_1) ? 0.0 : 1.0;
+			var x12_0 = x0_0 + 0.211324865405187 - i1_0;
+			var x12_1 = x0_1 + 0.211324865405187 - i1_1;
+			var x12_2 = x0_0 -0.577350269189626;
+			var x12_3 = x0_1 -0.577350269189626;
+			i_0 = i_0 - Math.floor(i_0 * mod289_temp0) * 289.0;
+			i_1 = i_1 - Math.floor(i_1 * mod289_temp0) * 289.0;
+			var p_0 = perm[ (perm[i_1 + 0.0   ] + i_0 + 0.0  ) & 511 ] * 0.024390243902439;
+			var p_1 = perm[ (perm[i_1 + i1_1  ] + i_0 + i1_0 ) & 511 ] * 0.024390243902439;
+			var p_2 = perm[ (perm[i_1 + 1.0   ] + i_0 + 1.0  ) & 511 ] * 0.024390243902439;
+			var x_0 = 2.0 * (p_0 - Math.floor(p_0)) - 1.0;
+			var x_1 = 2.0 * (p_1 - Math.floor(p_1)) - 1.0;
+			var x_2 = 2.0 * (p_2 - Math.floor(p_2)) - 1.0;
+			var h_0 = Math.abs(x_0) - 0.5;
+			var h_1 = Math.abs(x_1) - 0.5;
+			var h_2 = Math.abs(x_2) - 0.5;
+			var a0_0 = x_0 - Math.floor(x_0 + 0.5);
+			var a0_1 = x_1 - Math.floor(x_1 + 0.5);
+			var a0_2 = x_2 - Math.floor(x_2 + 0.5);
+			var m_0 = Math.max(0.5 - (x0_0 * x0_0 + x0_1 * x0_1), 0.0);
+			var m_1 = Math.max(0.5 - (x12_0 * x12_0 + x12_1 * x12_1), 0.0);
+			var m_2 = Math.max(0.5 - (x12_2 * x12_2 + x12_3 * x12_3), 0.0);
+			m_0 = m_0 * m_0 * m_0 * m_0 * ( 1.79284291400159 - 0.85373472095314 * ( a0_0 * a0_0 + h_0 * h_0 ) );
+			m_1 = m_1 * m_1 * m_1 * m_1 * ( 1.79284291400159 - 0.85373472095314 * ( a0_1 * a0_1 + h_1 * h_1 ) );
+			m_2 = m_2 * m_2 * m_2 * m_2 * ( 1.79284291400159 - 0.85373472095314 * ( a0_2 * a0_2 + h_2 * h_2 ) );
+			var g_0 = a0_0  * x0_0  + h_0 * x0_1;
+			var g_1 = a0_1  * x12_0 + h_1 * x12_1;
+			var g_2 = a0_2  * x12_2 + h_2 * x12_3;
+			return 130.0 * (m_0 * g_0 + m_1 * g_1 + m_2 * g_2);//vec3.dot(m, g);
+		}
+		var noise = new SimplexNoise2D();
 		var data = JSON.parse(ev.data);
 
 		var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">';
 
-		for( var i = 0 ; i < data.totalCircles.value ; i++ ){
+		for( var i = 0 ; i < data.rings.value - 1 ; i++ ){
 
 			var color;
-			if( i < data.totalCircles.value / 2 ) color = HSVtoRGB( data.light.value + i / data.totalCircles.value / 2 , 0.9, 0.7 );
-			else color = HSVtoRGB( data.light.value + ( data.totalCircles.value - i ) / data.totalCircles.value / 2.0 , 0.9, 0.7 );
-			
+			if( i < data.rings.value / 2 ) color = HSVtoRGB( data.lightStep.value + i / data.rings.value / 2 , 0.9, 0.7 );
+			else color = HSVtoRGB( data.lightStep.value + ( data.rings.value - i ) / data.rings.value / 2.0 , 0.9, 0.7 );
 
-
-			if( i >= 0 && i < data.totalCircles.value / 3 ){
-					var step = i / ( data.totalCircles.value / 3);
+			if( i >= 0 && i < data.rings.value / 3 ){
+					var step = i / ( data.rings.value / 3);
 					
-					var px = Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
+					var px = Math.cos( Math.PI * 2.0 * i / (data.rings.value - 1) ) * ( data.bigRadius.value );
+					var py = Math.sin( Math.PI * 2.0 * i / (data.rings.value - 1) ) * ( data.bigRadius.value );
 
-					px += px * def * 0.1;
-					py += px * def * 0.1;
+					var n = noise.snoise( px / 900.0 + data.air.value, py / 900.0 );
+					px += px * 0.3 * n * (data.soil.value);
+					py += py * 0.3 * n * (data.soil.value);
+
+					var def = 1.0 + noise.snoise( px / 600.0 + data.air.value, py / 600.0 ) * ( data.soil.value - 0.25 * data.soil.value );
+
+					var waterDef = noise.snoise( px / data.waterPhase.value + data.waterStep.value, py / data.waterPhase.value );
+					def *= 1.0 + waterDef * data.waterIntensity.value * 0.4;
+					
+					px += px * 0.1 * waterDef * data.waterIntensity.value;
+					py += py * 0.1 * waterDef * data.waterIntensity.value;
 
 				for( var j = 0 ; j < data.pos0.value.length ; j+=3 ){
 					if( j == 0 ){
-						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos0.value[j] + ( data.pos1.value[j] - data.pos0.value[j]) * step ) );
-						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) );
-						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ (px + sx) +' '+ (py + sy);
+						var sx = parseFloat( 400 + def * parseFloat( data.pos0.value[j] + ( data.pos1.value[j] - data.pos0.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) );
+						svg += '<path fill="none" stroke-width="0.25" stroke="rgb('+color+')" d="M'+ (px + sx) +' '+ ((py + sy) * -1 + 800)	;
 					} else {						
-						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos0.value[j] + ( data.pos1.value[j] - data.pos0.value[j]) * step ) );
-						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) );
-						svg += ' L'+ (px + sx) +' '+ (py + sy) ;
+						var sx = parseFloat( 400 + def * parseFloat( data.pos0.value[j] + ( data.pos1.value[j] - data.pos0.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * parseFloat( data.pos0.value[j+1] + ( data.pos1.value[j+1] - data.pos0.value[j+1]) * step ) );
+						svg += ' L'+ (px + sx) +' '+ ((py + sy) * -1 + 800)	 ;
 					}
 				}
 				svg += '"/>';
 			}
 
-			if( i >= data.totalCircles.value / 3 && i < data.totalCircles.value / 3 * 2 ){
-					var step = (i - data.totalCircles.value / 3) / ( data.totalCircles.value / 3);
+			if( i >= data.rings.value / 3 && i < data.rings.value / 3 * 2 ){
+					var step = (i - data.rings.value / 3) / ( data.rings.value / 3);
 
-					var px = Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
+					var px = Math.cos( Math.PI * 2.0 * i / (data.rings.value - 1) ) * ( data.bigRadius.value );
+					var py = Math.sin( Math.PI * 2.0 * i / (data.rings.value - 1) ) * ( data.bigRadius.value );
 
-					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
+					// var def = (noise.snoise(px/300,py/300) + 1.0) / 2 + 1;
 
-					px += px * def * 0.1;
-					py += px * def * 0.1;
+					var n = noise.snoise( px / 900.0 + data.air.value, py / 900.0 );
+					px += px * 0.3 * n * (data.soil.value);
+					py += py * 0.3 * n * (data.soil.value);
+
+					var def = 1.0 + noise.snoise( px / 600.0 + data.air.value, py / 600.0 ) * ( data.soil.value - 0.25 * data.soil.value );
+
+					var waterDef = noise.snoise( px / data.waterPhase.value + data.waterStep.value, py / data.waterPhase.value );
+					def *= 1.0 + waterDef * data.waterIntensity.value * 0.4;
+					
+					px += px * 0.1 * waterDef * data.waterIntensity.value;
+					py += py * 0.1 * waterDef * data.waterIntensity.value;
 
 				for( var j = 0 ; j < data.pos1.value.length ; j+=3 ){
 					if( j == 0 ){
-						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) );
-						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) );
-						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ (px + sx) +' '+ (py + sy);
+						var sx = parseFloat( 400 + def * parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) );
+						svg += '<path fill="none" stroke-width="0.25" stroke="rgb('+color+')" d="M'+ (px + sx) +' '+ ((py + sy) * -1 + 800)	;
 					} else {
-						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) );
-						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) );
-						svg += ' L'+ (px + sx) +' '+ (py + sy) ;
+						var sx = parseFloat( 400 + def * parseFloat( data.pos1.value[j] + ( data.pos2.value[j] - data.pos1.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * parseFloat( data.pos1.value[j+1] + ( data.pos2.value[j+1] - data.pos1.value[j+1]) * step ) );
+						svg += ' L'+ (px + sx) +' '+ ((py + sy) * -1 + 800)	 ;
 					}
 				}
 				svg += '"/>';
 			}
 
-			if( i >= data.totalCircles.value / 3 * 2 ){
-					var step = (i - data.totalCircles.value / 3 * 2) / ( data.totalCircles.value / 3);
-					var px = Math.cos( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value );
-					var py = Math.sin( Math.PI * 2.0 * i / (data.totalCircles.value - 1) ) * ( data.ringRadius.value )
-					var def = (noise.noise2D(px/300,py/300) + 1.0) / 2 + 1;
+			if( i >= data.rings.value / 3 * 2 ){
+					var step = (i - data.rings.value / 3 * 2) / ( data.rings.value / 3);
+					var px = Math.cos( Math.PI * 2.0 * i / (data.rings.value - 1) ) * ( data.bigRadius.value );
+					var py = Math.sin( Math.PI * 2.0 * i / (data.rings.value - 1) ) * ( data.bigRadius.value );
 
-					px += px * def * 0.1;
-					py += px * def * 0.1;
+					// var def = (noise.snoise(px/300,py/300) + 1.0) / 2 + 1;
+					var n = noise.snoise( px / 900.0 + data.air.value, py / 900.0 );
+					px += px * 0.3 * n * (data.soil.value);
+					py += py * 0.3 * n * (data.soil.value);
+
+					var def = 1.0 + noise.snoise( px / 600.0 + data.air.value, py / 600.0 ) * ( data.soil.value - 0.25 * data.soil.value );
+
+					var waterDef = noise.snoise( px / data.waterPhase.value + data.waterStep.value, py / data.waterPhase.value );
+					def *= 1.0 + waterDef * data.waterIntensity.value * 0.4;
+					
+					px += px * 0.1 * waterDef * data.waterIntensity.value;
+					py += py * 0.1 * waterDef * data.waterIntensity.value;
 
 				for( var j = 0 ; j < data.pos2.value.length ; j+=3 ){
 					if( j == 0 ){
-						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos2.value[j] + ( data.pos0.value[j] - data.pos2.value[j]) * step ) );
-						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) );
-						svg += '<path fill="none" stroke-width="0.5" stroke="rgb('+color+')" d="M'+ (px + sx) +' '+ (py + sy);
+						var sx = parseFloat( 400 + def * parseFloat( data.pos2.value[j] + ( data.pos0.value[j] - data.pos2.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) );
+						svg += '<path fill="none" stroke-width="0.25" stroke="rgb('+color+')" d="M'+ (px + sx) +' '+ ((py + sy) * -1 + 800)	;
 					} else {
-						var sx = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos2.value[j] + ( data.pos0.value[j] - data.pos2.value[j]) * step ) );
-						var sy = parseFloat( 400 + def * 0.1 + def * parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) );
-						svg += ' L'+ (px + sx) +' '+ (py + sy) ;
+						var sx = parseFloat( 400 + def * parseFloat( data.pos2.value[j] + ( data.pos0.value[j] - data.pos2.value[j]) * step ) );
+						var sy = parseFloat( 400 + def * parseFloat( data.pos2.value[j+1] + ( data.pos0.value[j+1] - data.pos2.value[j+1]) * step ) );
+						svg += ' L'+ (px + sx) +' '+ ((py + sy) * -1 + 800)	 ;
 					}
 				}
 				svg += '"/>';
@@ -416,21 +488,25 @@ var Export = function( ){
 }
 
 module.exports = Export;
-},{"simplex-noise":13}],4:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 var lineVs = require('./../../shaders/lineVs.glsl');
 var lineFs = require('./../../shaders/lineFs.glsl');
+var exportFS = require('./../../shaders/exportFS.glsl');
 var Work = require('webworkify');
 
 var Ring = function( parent ){
 	this.parent = parent;
 
-	var position = [], ids = [], iids = [];
+	var position = [], ids = [], iids = [], tids = [];
 
+	var inc = 0;
 	for( var j = 0 ; j < this.parent.data.rings - 1 ; j++ ){
 		for( var i = 0 ; i < this.parent.data.segments + 3 ; i++ ){
 			position.push( 0, 0, 0 );
 			ids.push( j );
 			iids.push( i );
+			tids.push(inc);
+			inc++;
 		}
 	}
 
@@ -440,6 +516,7 @@ var Ring = function( parent ){
 	geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( [] ), 4 ) );
 	geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( ids ), 1 ) );
 	geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( iids ), 1 ) );
+	geometry.addAttribute( 'tids', new THREE.BufferAttribute( new Float32Array( tids ), 1 ) );
 
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
@@ -475,28 +552,55 @@ var Ring = function( parent ){
 	this.mesh.geometry.attributes.color.needsUpdate = true;
 
 	this.parent.emitter.on('export', this.export.bind(this));
+
+	var totalVertices = this.parent.data.rings * ( this.parent.data.segments + 3);
+	// console.log(totalVertices);
+
+	var renderTarget = new THREE.WebGLRenderTarget( 512, 512, {
+		wrapS: null,
+		wrapT: null,
+		minFilter: THREE.NearestFilter,
+		magFilter: THREE.NearestFilter,
+		format: THREE.RGBAFormat,
+		type: ( /(iPad|iPhone|iPod)/g.test( navigator.userAgent ) ) ? THREE.HalfFloatType : THREE.FloatType,
+		stencilBuffer: false
+	} );
+
+	this.planeGeometry = new THREE.PlaneBufferGeometry( 512, 512 );
+	this.planeMaterial = new THREE.ShaderMaterial( {
+		uniforms: {
+
+		},
+		vertexShader: lineVs,
+		fragmentShader: exportFS
+	} );
+
+	// this.planeMaterial = new THREE.MeshBasicMaterial({ color : 0xff0000 })
+	this.plane = new THREE.Mesh( this.planeGeometry, this.planeMaterial );
 }
 
 Ring.prototype.export = function( ) {
 	var w = Work( require('./export.js') );
-	
+	this.exporting = true;
 	w.addEventListener('message', function (ev) {
-		var parser = new DOMParser();
-		var doc = parser.parseFromString(ev.data, "image/svg+xml");
-		this.parent.containerEl.appendChild(doc.childNodes[0]);
 
-		// var source = ev.data;
+		// var parser = new DOMParser();
+		// var doc = parser.parseFromString(ev.data, "image/svg+xml");
+		// this.parent.containerEl.appendChild(doc.childNodes[0]);
 
-		// var element = document.createElement('a');
-		// element.setAttribute('href', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ev.data));
-		// element.setAttribute('download', 'SVGexport');
+		
+		var source = ev.data;
 
-		// element.style.display = 'none';
-		// document.body.appendChild(element);
+		var element = document.createElement('a');
+		element.setAttribute('href', 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ev.data));
+		element.setAttribute('download', 'SVGexport');
 
-		// element.click();
+		element.style.display = 'none';
+		document.body.appendChild(element);
 
-		// document.body.removeChild(element);
+		element.click();
+
+		document.body.removeChild(element);
 
 	}.bind(this));
 
@@ -516,22 +620,28 @@ Ring.prototype.step = function(time){
 	this.mesh.material.uniforms.waterStep.value = this.parent.data.waterStep;
 	this.mesh.material.uniforms.lightStep.value = this.parent.data.lightStep;
 	this.mesh.material.uniforms.substrate.value = this.parent.data.substrate;
-	
+
+	this.plane.material.uniforms = this.mesh.material.uniforms;
 	// this.mesh.material.uniforms.audioData.value = this.parent.data.audioData;
+
+	this.plane.geometry.attributes.position.needsUpdate = true;
 	this.mesh.geometry.attributes.position.needsUpdate = true;
 }
 
 module.exports = Ring;
-},{"./../../shaders/lineFs.glsl":5,"./../../shaders/lineVs.glsl":6,"./export.js":3,"webworkify":15}],5:[function(require,module,exports){
-module.exports = "varying vec4 vColor;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ fragment shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main( ){\n\tgl_FragColor = vColor;\n}";
+},{"./../../shaders/exportFS.glsl":5,"./../../shaders/lineFs.glsl":6,"./../../shaders/lineVs.glsl":7,"./export.js":3,"webworkify":16}],5:[function(require,module,exports){
+module.exports = "varying vec4 vColor;\nvarying vec4 vtx_out;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ fragment shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main( ){\n\t//gl_FragData [0] = vtx_out;\n\tgl_FragColor = vec4(1.0,0.0,0.0,1.0);\n}";
 
 },{}],6:[function(require,module,exports){
-module.exports = "varying vec4 vColor;\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nuniform float bigRadius;\nuniform vec3 pos0[201];\nuniform vec3 pos1[201];\nuniform vec3 pos2[201];\nuniform float temperature;\nuniform float soil;\nuniform float air;\nuniform float waterStep;\nuniform float waterPhase;\nuniform float waterIntensity;\nuniform float lightStep;\nuniform float substrate;\nuniform float audioData[128];\nuniform float rings;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | ASHIMA NOISE\n// | Copyright (C) 2011 Ashima Arts. All rights reserved. \n// | Distributed under the MIT License.\n// └────────────────────────────────────────────────────────────────────┘\n#define M_PI 3.1415926535897932384626433832795\nvec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }\nfloat snoise(vec2 v) { \n\tconst vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);\n\tvec2 i = floor(v + dot(v, C.yy) );\n\tvec2 x0 = v - i + dot(i, C.xx);\n\tvec2 i1;\n\ti1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n\tvec4 x12 = x0.xyxy + C.xxzz;\n\tx12.xy -= i1;\n\ti = mod289(i);\n\tvec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));\n\tvec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n\tm = m*m ;\n\tm = m*m ;\n\tvec3 x = 2.0 * fract(p * C.www) - 1.0;\n\tvec3 h = abs(x) - 0.5;\n\tvec3 ox = floor(x + 0.5);\n\tvec3 a0 = x - ox;\n\tm *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\tvec3 g;\n\tg.x  = a0.x  * x0.x  + h.x  * x0.y;\n\tg.yz = a0.yz * x12.xz + h.yz * x12.yw;\n\treturn 130.0 * dot(m, g);\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | HSV2RGB https://github.com/hughsk/glsl-hsv2rgb\n// | No license found. \n// └────────────────────────────────────────────────────────────────────┘\nvec3 hsv2rgb( vec3 c ) {\n\tvec4 K = vec4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );\n\tvec3 p = abs( fract( c.xxx + K.xyz ) * 6.0 - K.www );\n\treturn c.z * mix( K.xxx, clamp( p - K.xxx, 0.0, 1.0 ), c.y );\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ vertex shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main() {\n\t\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\t// vertex colors\n\tif( ids < rings / 2.0 ) vColor.rgb = hsv2rgb( vec3( lightStep + ids / rings / 2.0 , 0.9, 0.7 ) );\n\telse vColor.rgb = hsv2rgb( vec3( lightStep + ( rings - ids ) / rings / 2.0 , 0.9, 0.7 ) );\n\tvColor.a = color.a;\n\n\t// rings\n\tif( ids < rings * 0.33 ) interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (rings * 0.33);\n\telse if( ids >= rings * 0.33 && ids < rings * 0.66 ) interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (rings * 0.33)) / (rings * 0.33);\n\telse interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (rings * 0.66)) / (rings * 0.33);\n\n\t// ring positions\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), sin( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), 0.0 );\n\t\n\n\t//audio\n\t// translate.x *= 1.0 + audioData[2] / 5.0 ;\n\t// translate.y *= 1.0 + audioData[12] / 5.0 ;\n\t// translate *= 1.0 + cos( time + M_PI * 12.0 * ids / ( rings - 1.0 ) ) * 0.1 *  audioData[8];\n\n\t// water\n\tfloat waterDist = snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) );\n\tinterpolate *= 1.0 + waterDist * waterIntensity * 0.4;\n\ttranslate += translate * 0.1 * waterDist * waterIntensity;\n\n\t// soil + air\n\tfloat def = snoise( vec2( translate.x / 600.0 + air, translate.y / 600.0 ) );\n\ttranslate += translate * 0.3 * snoise( vec2( translate.x / 900.0 + air, translate.y / 900.0 ) ) * (soil);\n\tinterpolate *= 1.0 + def * ( soil - 0.25 * soil ) ;\n\n\t// substrate\n\t// interpolate *= substrate;\n\t\n\tfPos = translate + interpolate;\n\n\t// float noise = 1.0;\n\t// fPos = interpolate * substrate * ( snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) );\n\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
+module.exports = "varying vec4 vColor;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ fragment shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main( ){\n\tgl_FragColor = vColor;\n}";
 
 },{}],7:[function(require,module,exports){
+module.exports = "varying vec4 vColor;\nvarying vec4 vtx_out;\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\nattribute float tids;\n\nuniform float bigRadius;\nuniform vec3 pos0[201];\nuniform vec3 pos1[201];\nuniform vec3 pos2[201];\nuniform float temperature;\nuniform float soil;\nuniform float air;\nuniform float waterStep;\nuniform float waterPhase;\nuniform float waterIntensity;\nuniform float lightStep;\nuniform float substrate;\nuniform float audioData[128];\nuniform float rings;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | ASHIMA NOISE\n// | Copyright (C) 2011 Ashima Arts. All rights reserved. \n// | Distributed under the MIT License.\n// └────────────────────────────────────────────────────────────────────┘\n#define M_PI 3.1415926535897932384626433832795\nvec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }\nfloat snoise(vec2 v) { \n\tconst vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);\n\tvec2 i = floor(v + dot(v, C.yy) );\n\tvec2 x0 = v - i + dot(i, C.xx);\n\tvec2 i1;\n\ti1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n\tvec4 x12 = x0.xyxy + C.xxzz;\n\tx12.xy -= i1;\n\ti = mod289(i);\n\tvec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));\n\tvec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n\tm = m*m ;\n\tm = m*m ;\n\tvec3 x = 2.0 * fract(p * C.www) - 1.0;\n\tvec3 h = abs(x) - 0.5;\n\tvec3 ox = floor(x + 0.5);\n\tvec3 a0 = x - ox;\n\tm *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\tvec3 g;\n\tg.x  = a0.x  * x0.x  + h.x  * x0.y;\n\tg.yz = a0.yz * x12.xz + h.yz * x12.yw;\n\treturn 130.0 * dot(m, g);\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | HSV2RGB https://github.com/hughsk/glsl-hsv2rgb\n// | No license found. \n// └────────────────────────────────────────────────────────────────────┘\nvec3 hsv2rgb( vec3 c ) {\n\tvec4 K = vec4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );\n\tvec3 p = abs( fract( c.xxx + K.xyz ) * 6.0 - K.www );\n\treturn c.z * mix( K.xxx, clamp( p - K.xxx, 0.0, 1.0 ), c.y );\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ vertex shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main() {\n\t\n\tfloat width = 512.0;\n\tfloat height = 512.0;\n\n\tvec3 fPos;\n\tvec3 interpolate;\n\n\t// vertex colors\n\tif( ids < rings / 2.0 ) vColor.rgb = hsv2rgb( vec3( lightStep + ids / rings / 2.0 , 0.9, 0.7 ) );\n\telse vColor.rgb = hsv2rgb( vec3( lightStep + ( rings - ids ) / rings / 2.0 , 0.9, 0.7 ) );\n\tvColor.a = color.a;\n\n\t// rings\n\tif( ids < rings * 0.33 ) interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (rings * 0.33);\n\telse if( ids >= rings * 0.33 && ids < rings * 0.66 ) interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (rings * 0.33)) / (rings * 0.33);\n\telse interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (rings * 0.66)) / (rings * 0.33);\n\n\t// ring positions\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), sin( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), 0.0 );\n\t\n\t\n\n\t// soil + air\n\ttranslate += translate * 0.3 * snoise( vec2( translate.x / 900.0 + air, translate.y / 900.0 ) ) * (soil);\n\tinterpolate *= 1.0 + snoise( vec2( translate.x / 600.0 + air, translate.y / 600.0 ) ) * ( soil - 0.25 * soil ) ;\n\t\n\t// water\n\tfloat waterDist = snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) );\n\tinterpolate *= 1.0 + waterDist * waterIntensity * 0.4;\n\ttranslate += translate * 0.1 * waterDist * waterIntensity;\n\t\n\tfPos = translate + interpolate;\n\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
+
+},{}],8:[function(require,module,exports){
 module.exports = require('./vendor/dat.gui')
 module.exports.color = require('./vendor/dat.color')
-},{"./vendor/dat.color":8,"./vendor/dat.gui":9}],8:[function(require,module,exports){
+},{"./vendor/dat.color":9,"./vendor/dat.gui":10}],9:[function(require,module,exports){
 /**
  * dat-gui JavaScript Controller Library
  * http://code.google.com/p/dat-gui
@@ -1287,7 +1397,7 @@ dat.color.math = (function () {
 })(),
 dat.color.toString,
 dat.utils.common);
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /**
  * dat-gui JavaScript Controller Library
  * http://code.google.com/p/dat-gui
@@ -4948,7 +5058,7 @@ dat.dom.CenteredDiv = (function (dom, common) {
 dat.utils.common),
 dat.dom.dom,
 dat.utils.common);
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5252,7 +5362,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 (function (global){
 /*!
  * VERSION: 1.19.1
@@ -13112,7 +13222,7 @@ if (_gsScope._gsDefine) { _gsScope._gsQueue.pop()(); } //necessary in case Tween
 
 })((typeof(module) !== "undefined" && module.exports && typeof(global) !== "undefined") ? global : this || window, "TweenMax");
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 (function (global){
 /**
 * matter-js 0.12.0 by @liabru 2017-02-02
@@ -23295,7 +23405,7 @@ var Vector = _dereq_('../geometry/Vector');
 },{"../body/Composite":2,"../core/Common":14,"../core/Events":16,"../geometry/Bounds":26,"../geometry/Vector":28}]},{},[30])(30)
 });
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /*
  * A fast javascript implementation of simplex noise by Jonas Wagner
  *
@@ -23713,7 +23823,7 @@ if (typeof module !== 'undefined') {
 
 })();
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -67015,7 +67125,7 @@ if (typeof module !== 'undefined') {
 
 })));
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var bundleFn = arguments[3];
 var sources = arguments[4];
 var cache = arguments[5];
