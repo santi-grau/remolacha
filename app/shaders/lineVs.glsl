@@ -1,8 +1,10 @@
 varying vec4 vColor;
+varying vec4 vtx_out;
 
 attribute vec4 color;
 attribute float ids;
 attribute float iids;
+attribute float tids;
 
 uniform float bigRadius;
 uniform vec3 pos0[201];
@@ -67,6 +69,9 @@ vec3 hsv2rgb( vec3 c ) {
 // └────────────────────────────────────────────────────────────────────┘
 void main() {
 	
+	float width = 512.0;
+	float height = 512.0;
+
 	vec3 fPos;
 	vec3 interpolate;
 
@@ -83,29 +88,18 @@ void main() {
 	// ring positions
 	vec3 translate = vec3( cos( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), sin( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), 0.0 );
 	
+	
 
-	//audio
-	// translate.x *= 1.0 + audioData[2] / 5.0 ;
-	// translate.y *= 1.0 + audioData[12] / 5.0 ;
-	// translate *= 1.0 + cos( time + M_PI * 12.0 * ids / ( rings - 1.0 ) ) * 0.1 *  audioData[8];
-
+	// soil + air
+	translate += translate * 0.3 * snoise( vec2( translate.x / 900.0 + air, translate.y / 900.0 ) ) * (soil);
+	interpolate *= 1.0 + snoise( vec2( translate.x / 600.0 + air, translate.y / 600.0 ) ) * ( soil - 0.25 * soil ) ;
+	
 	// water
 	float waterDist = snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) );
 	interpolate *= 1.0 + waterDist * waterIntensity * 0.4;
 	translate += translate * 0.1 * waterDist * waterIntensity;
-
-	// soil + air
-	float def = snoise( vec2( translate.x / 600.0 + air, translate.y / 600.0 ) );
-	translate += translate * 0.3 * snoise( vec2( translate.x / 900.0 + air, translate.y / 900.0 ) ) * (soil);
-	interpolate *= 1.0 + def * ( soil - 0.25 * soil ) ;
-
-	// substrate
-	// interpolate *= substrate;
 	
 	fPos = translate + interpolate;
-
-	// float noise = 1.0;
-	// fPos = interpolate * substrate * ( snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) ) + 1.0 ) + translate + translate * 0.1 * snoise( vec2( translate.x / 200.0 + waterStep, translate.y / 200.0 ) );
 
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );
 }

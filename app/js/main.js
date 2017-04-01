@@ -59,9 +59,11 @@ var App = function() {
 	this.containerEl.appendChild( this.renderer.domElement );
 
 	this.scene = new THREE.Scene();
-	this.camera = new THREE.PerspectiveCamera( 20, this.containerEl.offsetWidth / this.containerEl.offsetHeight, .1, 10000 );
-
+	this.camera = new THREE.OrthographicCamera( );
+	console.log(this.camera);
 	this.scene.add( this.ring.mesh );
+
+	// this.scene.add( this.ring.plane );
 
 	window.onresize = this.onResize.bind( this );
 
@@ -73,14 +75,17 @@ var App = function() {
 App.prototype.onResize = function(e) {
 	this.renderer.setSize( this.containerEl.offsetWidth * 2, this.containerEl.offsetHeight * 2 );
 	this.renderer.domElement.setAttribute( 'style', 'width:' + this.containerEl.offsetWidth + 'px; height:' + this.containerEl.offsetHeight + 'px' );
-	var vFOV = this.camera.fov * Math.PI / 180;
-	this.camera.position.z = this.containerEl.offsetHeight / ( 2 * Math.tan( vFOV / 2 ) );
+	this.camera.left = this.containerEl.offsetWidth / - 2;
+	this.camera.right = this.containerEl.offsetWidth / 2;
+	this.camera.top = this.containerEl.offsetHeight / 2;
+	this.camera.bottom = this.containerEl.offsetHeight / - 2;
+	this.camera.position.z = 1;
 	this.camera.updateProjectionMatrix();
 }
 
 App.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
-
+	if( this.ring.exporting ) return false;
 	
 	this.data.step( time );
 	this.ring.step( time );
