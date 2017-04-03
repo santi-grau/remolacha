@@ -1,7 +1,61 @@
+window.webkitRequestAnimationFrame = window.requestAnimationFrame;
+
 var Dat = require('dat-gui');
 var Matter = require('matter-js');
-var TweenMax = require('gsap');
 var SimplexNoise = require('simplex-noise');
+
+
+var audioSamples = 16;
+
+var SoundCloudAudioSource = function(audioElement, audioFile) {
+	this.isPlaying = false;
+	var player = document.getElementById(audioElement);
+	var self = this;
+	var analyser;
+	var audioCtx = new (window.AudioContext || window.webkitAudioContext);
+	analyser = audioCtx.createAnalyser();
+	analyser.smoothingTimeConstant = 0.6;
+	analyser.minDecibels = -200;
+	analyser.maxDecibels = 0;
+
+	analyser.fftSize = audioSamples * 2;
+	var source = audioCtx.createMediaElementSource(player);
+	source.connect(analyser);
+	analyser.connect(audioCtx.destination);
+	this.streamData = new Uint8Array(audioSamples);
+	this.sampleAudioStream = function() {
+
+		analyser.getByteFrequencyData(self.streamData);
+		var total = 0;
+		self.volume = total;
+	}; 
+	this.volume = 0;
+	player.setAttribute('src', audioFile);
+	this.stopPlayStream = function() {
+		if(!this.isPlaying) player.play();
+		else player.pause();
+	}
+};
+
+var audioSmoothing = 0.5
+
+var fftSmooth = []
+for( var i = 0 ; i < 128 ; i++ ) fftSmooth[i] = 0;
+var minVal = 0.0;
+var maxVal = 0.0;
+var firstMinDone = false;
+
+var dB = function(x) {
+  if (x == 0) {
+    return 0;
+  }
+  else {
+    return 10 * Math.log10(x);
+  }
+}
+
+
+
 
 var Data = function( parent ){
 	var _this = this;
@@ -12,7 +66,7 @@ var Data = function( parent ){
 	this.extRadius = 200;
 	this.ringRadius = 50;
 	this.intRadius = 50;
-	this.rings = 512;
+	this.rings = 256;
 	this.segments = 64;
 	this.pos0 = [];
 	this.pos1 = [];
@@ -31,13 +85,14 @@ var Data = function( parent ){
 	this.substrate = 0;
 	this.substrateInc = 0;
 	this.audio = false;
-
 	this.speed = 0.01;
 	this.timeStep = 0;
-
 	this.audioData = [];
 	this.generators = [];
+	this.audioSamples = audioSamples;
 	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
+
+	this.audioSource = new SoundCloudAudioSource('player','media/track' + Math.floor( Math.random() * 2 + 1 ) + '.mp3');
 
 	var GuiParameters = function() {
 		this.extRadius = _this.extRadius;
@@ -48,17 +103,20 @@ var Data = function( parent ){
 		this.water = _this.water;
 		this.light = _this.light;
 
+		this.rings = _this.rings;
+		this.segments = _this.segments;
+
 		this.substrate = function(){
 			_this.addSubstrate();
 		}
 
 		this.export = function(){
-			_this.parent.emitter.emit('export', true );
+			_this.parent.export();
 		}
 
 		this.playPauseAudio = function(){
-			_this.parent.audioSource.stopPlayStream();
-			_this.parent.audioSource.isPlaying = !_this.parent.audioSource.isPlaying;
+			_this.audioSource.stopPlayStream();
+			_this.audioSource.isPlaying = !_this.audioSource.isPlaying;
 		}
 	};
 
@@ -67,6 +125,8 @@ var Data = function( parent ){
 	var gui = new Dat.GUI();
 
 	this.f1 = gui.addFolder('Main data');
+	this.f1.add( this.gui, 'rings', [ 128, 256, 512, 1024 ] ).listen().onChange( function( value ){ _this.rings = value; }.bind(this) );
+	this.f1.add( this.gui, 'segments', [ 32, 64, 128, 256 ] ).listen().onChange( function( value ){ _this.segments = value; }.bind(this) );
 	this.f1.add( this.gui, 'extRadius', 100, 400 ).listen().onChange( function( value ){ _this.extRadius = value; }.bind(this) );
 	this.f1.add( this.gui, 'intRadius', 5, 100 ).listen().onChange( function( value ){ _this.intRadius = value; }.bind(this) );
 	this.f1.add( this.gui, 'temperature', 0, 1 ).listen().onChange( function( value ){ _this.temperature = value; }.bind(this) );
@@ -83,18 +143,18 @@ var Data = function( parent ){
 	var engine = Matter.Engine.create();
 	engine.world.gravity.y = 0;
 
-	var render = Matter.Render.create({
-		element: document.getElementById('renderer'),
-		engine: engine,
-		options : {
-			background : '#ffffff00',
-			wireframeBackground : "#ffffff00",
-			showCollisions : true,
-			pixelRatio : 1,
-			width : this.parent.containerEl.offsetWidth,
-			height : this.parent.containerEl.offsetHeight
-		}
-	});
+	// var render = Matter.Render.create({
+	// 	element: document.getElementById('renderer'),
+	// 	engine: engine,
+	// 	options : {
+	// 		background : '#ffffff00',
+	// 		wireframeBackground : "#ffffff00",
+	// 		showCollisions : true,
+	// 		pixelRatio : 1,
+	// 		width : this.parent.containerEl.offsetWidth,
+	// 		height : this.parent.containerEl.offsetHeight
+	// 	}
+	// });
 
 	this.substrateParticle = Matter.Bodies.circle( this.parent.containerEl.offsetWidth / 2, this.parent.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
 	this.substrateAnchor = Matter.Bodies.circle( this.parent.containerEl.offsetWidth / 2, this.parent.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
@@ -103,19 +163,20 @@ var Data = function( parent ){
 
 	this.stack = Matter.Composite.create();
 	this.fixed = Matter.Composite.create();
-	for (var i = 0; i < 128; i++) {
-		Matter.Composite.add( this.fixed, Matter.Bodies.circle( this.parent.containerEl.offsetWidth * i / 128, this.parent.containerEl.offsetHeight / 2, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}}));
-		Matter.Composite.add( this.stack, Matter.Bodies.circle( this.parent.containerEl.offsetWidth * i / 128, this.parent.containerEl.offsetHeight / 2, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}}));
+	for (var i = 0; i < audioSamples; i++) {
+		Matter.Composite.add( this.fixed, Matter.Bodies.circle( this.parent.containerEl.offsetWidth * i / audioSamples, this.parent.containerEl.offsetHeight / 2, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}}));
+		Matter.Composite.add( this.stack, Matter.Bodies.circle( this.parent.containerEl.offsetWidth * i / audioSamples, this.parent.containerEl.offsetHeight / 2, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}}));
 	};
 
-	for ( var i = 0; i < 128; i ++ ) {
+	for ( var i = 0; i < audioSamples; i ++ ) {
 		Matter.World.add(engine.world, Matter.Constraint.create({bodyA: this.fixed.bodies[i], pointA: { x: 0, y: 0 }, bodyB: this.stack.bodies[i], pointB: { x: 0, y: 0 }, stiffness: .1, render: { strokeWidth : .01, strokeStyle:'#00ffff'}}));
+		if( i < audioSamples - 1) Matter.World.add(engine.world, Matter.Constraint.create({bodyA: this.stack.bodies[i], pointA: { x: 0, y: 0 }, bodyB: this.stack.bodies[i+1], pointB: { x: 0, y: 0 }, stiffness: .05 , render: { strokeWidth : .01, strokeStyle:'#00ffff'}}));
 		Matter.Body.setStatic(this.fixed.bodies[i], true );
 	}
 
 	Matter.World.add( engine.world, [ this.substrateParticle, this.substrateAnchor, this.stack, this.fixed ] );
 	Matter.Engine.run(engine);
-	Matter.Render.run(render);
+	// Matter.Render.run(render);
 
 }
 
@@ -134,14 +195,14 @@ Data.prototype.update = function( data ){
 
 		if( key == 'audio'  ) {
 			if( param[key] ){
-				_this.parent.audioSource.isPlaying = false;
-				_this.parent.audioSource.stopPlayStream();
-				_this.parent.audioSource.isPlaying = true;
+				_this.audioSource.isPlaying = false;
+				_this.audioSource.stopPlayStream();
+				_this.audioSource.isPlaying = true;
 				
 			} else {
-				_this.parent.audioSource.isPlaying = true;
-				_this.parent.audioSource.stopPlayStream();
-				_this.parent.audioSource.isPlaying = false;
+				_this.audioSource.isPlaying = true;
+				_this.audioSource.stopPlayStream();
+				_this.audioSource.isPlaying = false;
 			}
 		}
 	}
@@ -162,7 +223,7 @@ Data.prototype.step = function( time ){
 
 	//light
 	this.lightInc += ( Math.max( Math.min( this.light, 0.005 ), 0.0001 ) - this.lightInc ) * 0.05;
-	this.lightStep += ( this.lightStep < 1 ) && this.lightInc || 0;
+	( this.lightStep < 1 ) && ( this.lightStep += this.lightInc ) || ( this.lightStep  = 0 );
 
 	//substrate
 	Matter.Body.applyForce( this.substrateParticle, this.substrateAnchor.position, { x : 0 , y: -this.substrateInc } );
@@ -172,34 +233,57 @@ Data.prototype.step = function( time ){
 	this.ringRadius = this.intRadius + this.intRadius * this.substrate;
 
 	// audio
-	this.parent.audioSource.sampleAudioStream();
+	this.audioSource.sampleAudioStream();
 	
 	this.timeStep += this.speed;
 	this.air += 0.0005 + 0.003 * this.airInc;
+ 	
 
-	for( var i = 0 ; i < 128 ; i++ ){
-		Matter.Body.applyForce( this.stack.bodies[ i ], this.fixed.bodies[ i ].position, { x : 0 , y: -this.parent.audioSource.streamData[i] / 255 } );
-		this.audioData[i] = (this.fixed.bodies[ i ].position.y - this.stack.bodies[ i ].position.y) / 125
+	for( var i = 0 ; i < audioSamples ; i++ ){
+
+		var fftCurr = dB(this.audioSource.streamData[i]);
+		fftSmooth[i] = audioSmoothing * fftSmooth[i] + ((1-audioSmoothing)*fftCurr);
+		if(fftSmooth[i] > maxVal ) maxVal = fftSmooth[i];
+		if(!firstMinDone || (fftSmooth[i] < minVal))  minVal = fftSmooth[i];
+
 	}
+
+	var range = maxVal - minVal;
+	var scaleFactor = range + 0.00001;
+	var maxHeight = 1;
+
+
+	for( var i = 0 ; i < audioSamples ; i++ ){
+		var fftSmoothDisplay = maxHeight * ((fftSmooth[i] - minVal) / scaleFactor);
+		Matter.Body.applyForce( this.stack.bodies[ i ], this.fixed.bodies[ i ].position, { x : 0 , y: -fftSmoothDisplay } );
+		this.audioData[i] = (this.fixed.bodies[ i ].position.y - this.stack.bodies[ i ].position.y) / 125 ;
+	}
+
 
 	for( var j = 0 ; j < 3 ; j++ ){
 		var pos = [], zeropos = [];
+		var audio = 1;
+		// if( j == 0 ) audio = this.audioData[0];
+		// if( j == 1 ) audio = this.audioData[8];
+		// if( j == 2 ) audio = this.audioData[14];
+		
 		for( var i = 0 ; i < this.segments ; i++ ){
 			var p = [ Math.cos( Math.PI * 2 * i / ( this.segments ) ), Math.sin( Math.PI * 2 * i / ( this.segments ) ) ];
 			if( i == 0 ){
 				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
-				pos.push( p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
+				pos.push( audio * p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
 			}
 			var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
-			pos.push( p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
+			pos.push( audio * p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
 			if( i == this.segments - 1 ) pos.push( zeropos[0], zeropos[1], 0, zeropos[0], zeropos[1], 0 );	
 			if( i == 0 ){
 				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
-				zeropos = [ p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 ];
+				zeropos = [ audio * p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 ];
 			}
 		}
 		this[ 'pos' + j ] = pos;
 	}
+	
 
 }
 

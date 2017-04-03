@@ -1,38 +1,9 @@
 window.THREE = require('three');
-var TweenMax = require('gsap');
-var EventEmitter = require('events').EventEmitter;
 
-window.webkitRequestAnimationFrame = window.requestAnimationFrame;
+var Work = require('webworkify');
 
 var Ring = require('./views/ring');
 var Data = require('./views/data');
-
-
-var SoundCloudAudioSource = function(audioElement, audioFile) {
-	this.isPlaying = false;
-	var player = document.getElementById(audioElement);
-	var self = this;
-	var analyser;
-	var audioCtx = new (window.AudioContext || window.webkitAudioContext);
-	analyser = audioCtx.createAnalyser();
-	analyser.fftSize = 256;
-	var source = audioCtx.createMediaElementSource(player);
-	source.connect(analyser);
-	analyser.connect(audioCtx.destination);
-	this.streamData = new Uint8Array(128);
-	this.sampleAudioStream = function() {
-		analyser.getByteFrequencyData(self.streamData);
-		var total = 0;
-		self.volume = total;
-	}; 
-	this.volume = 0;
-	player.setAttribute('src', audioFile);
-	this.stopPlayStream = function() {
-		if(!this.isPlaying) player.play();
-		else player.pause();
-	}
-};
-
 
 var App = function() {
 	var _this = this;
@@ -41,14 +12,10 @@ var App = function() {
 	if( location.origin.indexOf( 'localhost' ) !== -1 ) host = 'ws://localhost:5000/';
 	else host = location.origin.replace(/^http/, 'ws')
 	var ws = new WebSocket( host );
-	
-	this.audioSource = new SoundCloudAudioSource('player','media/track' + Math.floor( Math.random() * 2 + 1 ) + '.mp3');
 
 	ws.onmessage = function (event) {
 		_this.data.update( event.data );
 	};
-
-	this.emitter = new EventEmitter();
 
 	this.containerEl = document.getElementById('main');
 
@@ -60,16 +27,38 @@ var App = function() {
 
 	this.scene = new THREE.Scene();
 	this.camera = new THREE.OrthographicCamera( );
-	console.log(this.camera);
-	this.scene.add( this.ring.mesh );
 
-	// this.scene.add( this.ring.plane );
+	this.scene.add( this.ring.mesh );
 
 	window.onresize = this.onResize.bind( this );
 
 	this.onResize(); 
 
 	this.step();
+}
+
+App.prototype.export = function(){
+	var w = Work( require('./views/export.js') );
+	// this.exporting = true;
+	w.addEventListener('message', function (ev) {
+
+		// var parser = new DOMParser();
+		// var doc = parser.parseFromString(ev.data, "image/svg+xml");
+		// this.parent.containerEl.appendChild(doc.childNodes[0]);
+
+		csvData = new Blob([ev.data], { type: 'image/svg+xml', charset : 'utf-8' }); 
+		var csvUrl = URL.createObjectURL(csvData);
+		var element = document.createElement('a');
+		element.setAttribute('href', csvUrl);
+		element.setAttribute('download', 'SVGexport');
+		element.style.display = 'none';
+		document.body.appendChild(element);
+		element.click();
+		document.body.removeChild(element);
+		// this.exporting = false;
+	}.bind(this));
+
+	w.postMessage( JSON.stringify( this.ring.mesh.material.uniforms ) );
 }
 
 App.prototype.onResize = function(e) {
@@ -85,7 +74,7 @@ App.prototype.onResize = function(e) {
 
 App.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
-	if( this.ring.exporting ) return false;
+	// if( this.exporting ) return false;
 	
 	this.data.step( time );
 	this.ring.step( time );

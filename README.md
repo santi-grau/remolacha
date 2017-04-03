@@ -9,9 +9,8 @@ Should be ready on port 5000
 
 ### TODO
 
-- [ ] Add new order of parameters
-- [ ] Sync vs and exporter
-- [ ] Performance
+- [x] Add new order of parameters
+- [x] Sync vs and exporter
 - [x] Add measurements ( air moisture, land moisture, temperature)
 - [x] Interpolation ring n to ring  creates artifacts sometimes
 - [ ] Responsive
@@ -20,7 +19,11 @@ Should be ready on port 5000
 - [ ] SVG exporter
 - [ ] Big cleanup
 - [ ] Big rewrite
+- [ ] Performance
 - [ ] Add rings and segments selector
+- [ ] Audio
+- [ ] Substrate smoothing
+- [ ] Interpolation smoothstep
 
 ### PARAMS
 
