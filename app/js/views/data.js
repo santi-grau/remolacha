@@ -14,7 +14,7 @@ var SoundCloudAudioSource = function(audioElement, audioFile) {
 	var analyser;
 	var audioCtx = new (window.AudioContext || window.webkitAudioContext);
 	analyser = audioCtx.createAnalyser();
-	analyser.smoothingTimeConstant = 0.6;
+	analyser.smoothingTimeConstant = 0.0;
 	analyser.minDecibels = -200;
 	analyser.maxDecibels = 0;
 
@@ -57,17 +57,17 @@ var dB = function(x) {
 
 
 
-var Data = function( parent ){
+var Data = function( parent, params ){
 	var _this = this;
 	this.parent = parent;
 
 	// main params
-	this.bigRadius = 200;
-	this.extRadius = 200;
-	this.ringRadius = 50;
-	this.intRadius = 50;
-	this.rings = 256;
-	this.segments = 64;
+	this.bigRadius = params.bigRadius || 200;
+	this.extRadius = params.bigRadius || 200;
+	this.ringRadius = params.ringRadius || this.bigRadius / 3.2;
+	this.intRadius = params.ringRadius || this.bigRadius / 3.2;
+	this.rings = params.rings || 256;
+	this.segments = params.segments || 64;
 	this.pos0 = [];
 	this.pos1 = [];
 	this.pos2 = [];

@@ -65,7 +65,6 @@ vec3 hsv2rgb( vec3 c ) {
 // | Our ♥ vertex shader
 // └────────────────────────────────────────────────────────────────────┘
 void main() {
-
 	vec3 interpolate;
 
 	// vertex colors

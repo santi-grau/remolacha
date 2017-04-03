@@ -19,7 +19,18 @@ var App = function() {
 
 	this.containerEl = document.getElementById('main');
 
-	this.data = new Data( this );
+	var params = {};
+
+	params.bigRadius = Math.min( this.containerEl.offsetWidth, this.containerEl.offsetHeight ) / 4.8;
+	
+	if( params.bigRadius < 50 ) params.rings = 64;
+	else if( params.bigRadius >= 50 && params.bigRadius < 100 ) params.rings = 128;
+	else if( params.bigRadius >= 100 && params.bigRadius < 200 ) params.rings = 256;
+	else if( params.bigRadius >= 200 && params.bigRadius < 400 ) params.rings = 512;
+	else if( params.bigRadius >= 400 && params.bigRadius < 800 ) params.rings = 1024;
+	else params.rings = 2048;
+
+	this.data = new Data( this, params );
 	this.ring = new Ring( this );
 	
 	this.renderer = new THREE.WebGLRenderer( { alpha : true, antialias : true } );
@@ -39,7 +50,6 @@ var App = function() {
 
 App.prototype.export = function(){
 	var w = Work( require('./views/export.js') );
-	// this.exporting = true;
 	w.addEventListener('message', function (ev) {
 
 		// var parser = new DOMParser();
@@ -55,7 +65,6 @@ App.prototype.export = function(){
 		document.body.appendChild(element);
 		element.click();
 		document.body.removeChild(element);
-		// this.exporting = false;
 	}.bind(this));
 
 	w.postMessage( JSON.stringify( this.ring.mesh.material.uniforms ) );
@@ -70,11 +79,26 @@ App.prototype.onResize = function(e) {
 	this.camera.bottom = this.containerEl.offsetHeight / - 2;
 	this.camera.position.z = 1;
 	this.camera.updateProjectionMatrix();
+	clearTimeout( this.resizeStart );
+	this.resizeStart = setTimeout( this.onResizeEnd.bind(this), 400 );
+}
+
+App.prototype.onResizeEnd = function(e) {
+	// var params = {};
+	// this.data.bigRadius = Math.min( this.containerEl.offsetWidth, this.containerEl.offsetHeight ) / 4.8;
+	// this.data.rings = 64 * 2;
+	// if( Math.abs( this.data.bigRadius - 128 ) < Math.abs( this.data.bigRadius - 256 ) ) this.data.rings = 128 * 2;
+	// else if( Math.abs( this.data.bigRadius - 256 ) < Math.abs( this.data.bigRadius - 512 ) ) this.data.rings = 256 * 2;
+	// else if( Math.abs( this.data.bigRadius - 512 ) < Math.abs( this.data.bigRadius - 1024 ) ) this.data.rings = 512 * 2;
+	// else if( Math.abs( this.data.bigRadius - 1024 ) < Math.abs( this.data.bigRadius - 2048 ) ) this.data.rings = 1024 * 2;
+	// else this.data.rings = 2048 * 2;
+
+	// this.ring.onResizeEnd();
+
 }
 
 App.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
-	// if( this.exporting ) return false;
 	
 	this.data.step( time );
 	this.ring.step( time );

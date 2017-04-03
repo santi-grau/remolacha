@@ -147,7 +147,6 @@ var Export = function( ){
 					var px = Math.cos( Math.PI * 2.0 * i / (data.rings.value - 1) ) * ( data.bigRadius.value );
 					var py = Math.sin( Math.PI * 2.0 * i / (data.rings.value - 1) ) * ( data.bigRadius.value );
 
-					// var def = (noise.snoise(px/300,py/300) + 1.0) / 2 + 1;
 					var n = noise.snoise( px / 900.0 + data.air.value, py / 900.0 );
 					px += px * 0.3 * n * (data.soil.value);
 					py += py * 0.3 * n * (data.soil.value);

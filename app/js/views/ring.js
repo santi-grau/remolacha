@@ -4,26 +4,12 @@ var lineFs = require('./../../shaders/lineFs.glsl');
 var Ring = function( parent ){
 	this.parent = parent;
 
-	var position = [], ids = [], iids = [], tids = [];
-
-	var inc = 0;
-	for( var j = 0 ; j < this.parent.data.rings - 1 ; j++ ){
-		for( var i = 0 ; i < this.parent.data.segments + 3 ; i++ ){
-			position.push( 0, 0, 0 );
-			ids.push( j );
-			iids.push( i );
-			tids.push(inc);
-			inc++;
-		}
-	}
-
 	var geometry = new THREE.BufferGeometry();
-
-	geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( position ), 3 ) );
-	geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( [] ), 4 ) );
-	geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( ids ), 1 ) );
-	geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( iids ), 1 ) );
-	geometry.addAttribute( 'tids', new THREE.BufferAttribute( new Float32Array( tids ), 1 ) );
+	var attributes = this.getAttributes();
+	geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( attributes.position ), 3 ) );
+	geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( attributes.ids ), 1 ) );
+	geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( attributes.iids ), 1 ) );
+	geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( attributes.color ), 4 ) );
 
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
@@ -49,15 +35,41 @@ var Ring = function( parent ){
 	} );
 
 	this.mesh = new THREE.Line( geometry, material );
-	
-	var color = [];
+	console.log( geometry)
+}
+
+Ring.prototype.getAttributes = function(){
+	var position = [], ids = [], iids = [], color = [];
+	for( var i = 0 ; i < this.parent.data.rings - 1 ; i++ ){
+		for( var j = 0 ; j < this.parent.data.segments + 3 ; j++ ){
+			position.push( 0, 0, 0 );
+			ids.push( i );
+			iids.push( j );
+		}
+	}
+
 	for( var j = 0 ; j < this.parent.data.rings - 1; j++ ){
 		color.push(0,0,0,0);
 		for( var i = 0 ; i < this.parent.data.segments ; i++ ) color.push(0,0,0,1);
 		color.push(0,0,0,1,0,0,0,0);
 	}
-	this.mesh.geometry.attributes.color.array = new Float32Array( color );
-	this.mesh.geometry.attributes.color.needsUpdate = true;
+
+	return { position : position, ids : ids, iids : iids, color : color };
+}
+
+Ring.prototype.onResizeEnd = function(){
+	var attributes = this.getAttributes();
+	
+	// var position = this.mesh.geometry.getAttribute('position');
+	// this.mesh.geometry.set( 'position', new THREE.BufferAttribute( new Float32Array( attributes.position ), 3 ) );
+	// this.mesh.geometry.set( 'ids', new THREE.BufferAttribute( new Float32Array( attributes.ids ), 1 ) );
+	// this.mesh.geometry.set( 'iids', new THREE.BufferAttribute( new Float32Array( attributes.iids ), 1 ) );
+	// this.mesh.geometry.set( 'color', new THREE.BufferAttribute( new Float32Array( attributes.color ), 4 ) );
+
+	// this.mesh.geometry.attributes.position.needsUpdate = true;
+	// this.mesh.geometry.attributes.ids.needsUpdate = true;
+	// this.mesh.geometry.attributes.iids.needsUpdate = true;
+	// this.mesh.geometry.attributes.color.needsUpdate = true;
 }
 
 Ring.prototype.step = function(time){
@@ -75,8 +87,6 @@ Ring.prototype.step = function(time){
 	this.mesh.material.uniforms.substrate.value = this.parent.data.substrate;
 	this.mesh.material.uniforms.audioData.value = this.parent.data.audioData;
 	this.mesh.material.uniforms.audioSamples.value = this.parent.data.audioSamples;
-
-	this.mesh.geometry.attributes.position.needsUpdate = true;
 }
 
 module.exports = Ring;

@@ -12,18 +12,20 @@ Should be ready on port 5000
 - [x] Add new order of parameters
 - [x] Sync vs and exporter
 - [x] Add measurements ( air moisture, land moisture, temperature)
-- [x] Interpolation ring n to ring  creates artifacts sometimes
-- [ ] Responsive
+- [x] Interpolation ring n to ring creates artifacts
+- [x] Responsive
 - [ ] Devices
-- [ ] Replace matter for something more lightweight and performant
-- [ ] SVG exporter
+- [ ] Update on resize
+- [x] Replace matter for something more lightweight and performant
+- [ ] Add audio data to SVG exporter
 - [ ] Big cleanup
 - [ ] Big rewrite
 - [ ] Performance
 - [ ] Add rings and segments selector
-- [ ] Audio
+- [x] Audio
 - [ ] Substrate smoothing
 - [ ] Interpolation smoothstep
+- [ ] Color interopolation is awkward sometimes
 
 ### PARAMS
 
