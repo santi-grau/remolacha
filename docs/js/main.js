@@ -183,7 +183,7 @@ var Data = function( parent, params ){
 	this.pos2 = [];
 	this.temperature = Math.random();
 	this.soil = Math.random();
-	this.air = Math.random() * 1000;
+	this.air = Math.random();
 	this.airInc = Math.random();
 	this.water = false;
 	this.waterStep = 0.5;
@@ -294,15 +294,12 @@ Data.prototype.update = function( data ){
 	var _this = this;
 	var param = JSON.parse(data);
 	for( key in param ){
-		if( key == 'temperature' ) this.gui.temperature = param[key];
-		if( key == 'air' ) this.gui.air = param[key];
-		if( key == 'soil' ) this.gui.soil = param[key];
-
-		if( key == 'water'  ) _this.water = key;
-		if( key == 'light'  ) _this.light = key;
-
+		if( key == 'temperature' ) this.gui.temperature = this.temperature = param[key];
+		if( key == 'air' ) this.gui.air = this.air = param[key];
+		if( key == 'soil' ) this.gui.soil = this.soil = param[key];
+		if( key == 'water'  ) this.gui.water = this.water = param[key];
+		if( key == 'light') this.gui.light = this.light = param[key];
 		if( key == 'substrate'  ) this.addSubstrate();
-
 		if( key == 'audio'  ) {
 			if( param[key] ){
 				_this.audioSource.isPlaying = false;
@@ -372,23 +369,19 @@ Data.prototype.step = function( time ){
 
 	for( var j = 0 ; j < 3 ; j++ ){
 		var pos = [], zeropos = [];
-		var audio = 1;
-		// if( j == 0 ) audio = this.audioData[0];
-		// if( j == 1 ) audio = this.audioData[8];
-		// if( j == 2 ) audio = this.audioData[14];
 		
 		for( var i = 0 ; i < this.segments ; i++ ){
 			var p = [ Math.cos( Math.PI * 2 * i / ( this.segments ) ), Math.sin( Math.PI * 2 * i / ( this.segments ) ) ];
 			if( i == 0 ){
 				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
-				pos.push( audio * p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
+				pos.push( p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
 			}
 			var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
-			pos.push( audio * p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
+			pos.push( p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 );
 			if( i == this.segments - 1 ) pos.push( zeropos[0], zeropos[1], 0, zeropos[0], zeropos[1], 0 );	
 			if( i == 0 ){
 				var n = this.generators[j].noise2D( p[0] + this.timeStep, p[1] ) * this.temperature * this.ringRadius / 5;
-				zeropos = [ audio * p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 ];
+				zeropos = [ p[0] * ( this.ringRadius + n ), p[1] * ( this.ringRadius + n ), 0 ];
 			}
 		}
 		this[ 'pos' + j ] = pos;
