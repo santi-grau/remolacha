@@ -6,6 +6,7 @@ var Work = require('webworkify');
 var Ring = require('./views/ring');
 var Data = require('./views/data');
 
+
 var App = function() {
 	var _this = this;
 	
@@ -30,6 +31,11 @@ var App = function() {
 	else if( params.bigRadius >= 200 && params.bigRadius < 400 ) params.rings = 512;
 	else if( params.bigRadius >= 400 && params.bigRadius < 800 ) params.rings = 1024;
 	else params.rings = 2048;
+
+	if( params.bigRadius < 50 ) params.segments = 8;
+	else if( params.bigRadius >= 50 && params.bigRadius < 100 ) params.segments = 16;
+	else if( params.bigRadius >= 100 && params.bigRadius < 400 ) params.segments = 64;
+	else params.segments = 128;
 
 	this.data = new Data( this, params );
 	this.ring = new Ring( this );
@@ -85,16 +91,7 @@ App.prototype.onResize = function(e) {
 }
 
 App.prototype.onResizeEnd = function(e) {
-	// var params = {};
-	// this.data.bigRadius = Math.min( this.containerEl.offsetWidth, this.containerEl.offsetHeight ) / 4.8;
-	// this.data.rings = 64 * 2;
-	// if( Math.abs( this.data.bigRadius - 128 ) < Math.abs( this.data.bigRadius - 256 ) ) this.data.rings = 128 * 2;
-	// else if( Math.abs( this.data.bigRadius - 256 ) < Math.abs( this.data.bigRadius - 512 ) ) this.data.rings = 256 * 2;
-	// else if( Math.abs( this.data.bigRadius - 512 ) < Math.abs( this.data.bigRadius - 1024 ) ) this.data.rings = 512 * 2;
-	// else if( Math.abs( this.data.bigRadius - 1024 ) < Math.abs( this.data.bigRadius - 2048 ) ) this.data.rings = 1024 * 2;
-	// else this.data.rings = 2048 * 2;
-
-	// this.ring.onResizeEnd();
+	
 
 }
 
@@ -248,7 +245,7 @@ var Data = function( parent, params ){
 	this.f1.add( this.gui, 'playPauseAudio');
 	this.f1.add( this.gui, 'export');
 
-	this.f1.open();
+	this.f1.close();
 
 	var engine = Matter.Engine.create();
 	engine.world.gravity.y = 0;
@@ -578,6 +575,15 @@ module.exports = Export;
 var lineVs = require('./../../shaders/lineVs.glsl');
 var lineFs = require('./../../shaders/lineFs.glsl');
 
+// console.log(lineVs)
+
+// [segmentsNum]	
+
+String.prototype.replaceAll = function(search, replacement){
+	var target = this;
+	return target.replace(new RegExp(search,'g'),replacement);
+}
+
 var Ring = function( parent ){
 	this.parent = parent;
 
@@ -587,6 +593,12 @@ var Ring = function( parent ){
 	geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( attributes.ids ), 1 ) );
 	geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( attributes.iids ), 1 ) );
 	geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( attributes.color ), 4 ) );
+
+
+	// var lineVs = lineVs.replace(/[segmentsNum]/i, '67');
+
+	// lineVs = lineVs.replaceAll( '[segmentsNum]', ' ' + ( this.parent.data.segments + 3 ) + ' ' )
+	// console.log(lineVs)
 
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
@@ -607,7 +619,7 @@ var Ring = function( parent ){
 			audioSamples : { value : 0 }
 		},
 		transparent : true,
-		vertexShader: lineVs,
+		vertexShader: lineVs.replaceAll( 'segmentsNum', ' ' + ( this.parent.data.segments + 3 ) + ' ' ),
 		fragmentShader: lineFs
 	} );
 
@@ -671,7 +683,7 @@ module.exports = Ring;
 module.exports = "varying vec4 vColor;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ fragment shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main( ){\n\tgl_FragColor = vColor;\n}";
 
 },{}],6:[function(require,module,exports){
-module.exports = "varying vec4 vColor;\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nuniform float bigRadius;\nuniform vec3 pos0[201];\nuniform vec3 pos1[201];\nuniform vec3 pos2[201];\nuniform float temperature;\nuniform float soil;\nuniform float air;\nuniform float waterStep;\nuniform float waterPhase;\nuniform float waterIntensity;\nuniform float lightStep;\nuniform float substrate;\nuniform float audioData[16];\nuniform float rings;\nuniform float audioSamples;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | ASHIMA NOISE\n// | Copyright (C) 2011 Ashima Arts. All rights reserved. \n// | Distributed under the MIT License.\n// └────────────────────────────────────────────────────────────────────┘\n#define M_PI 3.1415926535897932384626433832795\nvec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }\nfloat snoise(vec2 v) { \n\tconst vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);\n\tvec2 i = floor(v + dot(v, C.yy) );\n\tvec2 x0 = v - i + dot(i, C.xx);\n\tvec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n\tvec4 x12 = x0.xyxy + C.xxzz;\n\tx12.xy -= i1;\n\ti = mod289(i);\n\tvec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));\n\tvec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n\tm = m*m*m*m ;\n\tvec3 x = 2.0 * fract(p * C.www) - 1.0;\n\tvec3 h = abs(x) - 0.5;\n\tvec3 ox = floor(x + 0.5);\n\tvec3 a0 = x - ox;\n\tm *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\tvec3 g;\n\tg.x  = a0.x * x0.x + h.x * x0.y;\n\tg.yz = a0.yz * x12.xz + h.yz * x12.yw;\n\treturn 130.0 * dot(m, g);\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | HSV2RGB https://github.com/hughsk/glsl-hsv2rgb\n// | No license found. \n// └────────────────────────────────────────────────────────────────────┘\nvec3 hsv2rgb( vec3 c ) {\n\tvec4 K = vec4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );\n\tvec3 p = abs( fract( c.xxx + K.xyz ) * 6.0 - K.www );\n\treturn c.z * mix( K.xxx, clamp( p - K.xxx, 0.0, 1.0 ), c.y );\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ vertex shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main() {\n\tvec3 interpolate;\n\n\t// vertex colors\n\tif( ids < rings / 2.0 ) vColor.rgb = hsv2rgb( vec3( lightStep + ids / rings / 2.0 , 0.9, 0.7 ) );\n\telse vColor.rgb = hsv2rgb( vec3( lightStep + ( rings - ids ) / rings / 2.0 , 0.9, 0.7 ) );\n\tvColor.a = color.a;\n\n\t// rings\n\tif( ids < rings * 0.33 ) interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (rings * 0.33);\n\telse if( ids >= rings * 0.33 && ids < rings * 0.66 ) interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (rings * 0.33)) / (rings * 0.33);\n\telse interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (rings * 0.66)) / (rings * 0.33);\n\n\t// ring positions\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), sin( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), 0.0 );\n\t\n\t// soil + air\n\ttranslate += translate * 0.3 * snoise( vec2( translate.x / 900.0 + air, translate.y / 900.0 ) ) * (soil);\n\tinterpolate *= 1.0 + snoise( vec2( translate.x / 600.0 + air, translate.y / 600.0 ) ) * ( soil - 0.25 * soil ) ;\n\t\n\t// water\n\tfloat waterDist = snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) );\n\tinterpolate *= 1.0 + waterDist * waterIntensity * 0.4;\n\ttranslate += translate * 0.1 * waterDist * waterIntensity;\n\n\t//audio\n\tfloat count;\n\tif( ids < rings / 2.0 ) count = ids;\n\telse count = ( rings - ids );\n\tfloat val1 = audioData[ int( floor( audioSamples * ( count / ( rings / 2.0 ) ) ) ) ];\n\tfloat val2 = audioData[ int( floor( audioSamples * ( count / ( rings / 2.0 ) ) + 1.0 ) ) ];\n\tfloat ringsPerSection =  rings / 2.0 / audioSamples ;\n\tfloat smoothed = (( count - floor( count / ringsPerSection ) * ( ringsPerSection ) )) / ( ringsPerSection );\n\tfloat audioDef = ( val1 + ( val2 - val1 ) * smoothstep(0.0,1.0,smoothed) );\n\tinterpolate *= 1.0 + audioDef;\n\ttranslate -= translate * 0.1 * audioDef;\n\n\tvec3 fPos = translate + interpolate;\n\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
+module.exports = "varying vec4 vColor;\n\nattribute vec4 color;\nattribute float ids;\nattribute float iids;\n\nuniform float bigRadius;\nuniform vec3 pos0[segmentsNum];\nuniform vec3 pos1[segmentsNum];\nuniform vec3 pos2[segmentsNum];\nuniform float temperature;\nuniform float soil;\nuniform float air;\nuniform float waterStep;\nuniform float waterPhase;\nuniform float waterIntensity;\nuniform float lightStep;\nuniform float substrate;\nuniform float audioData[16];\nuniform float rings;\nuniform float audioSamples;\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | ASHIMA NOISE\n// | Copyright (C) 2011 Ashima Arts. All rights reserved. \n// | Distributed under the MIT License.\n// └────────────────────────────────────────────────────────────────────┘\n#define M_PI 3.1415926535897932384626433832795\nvec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }\nvec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }\nfloat snoise(vec2 v) { \n\tconst vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);\n\tvec2 i = floor(v + dot(v, C.yy) );\n\tvec2 x0 = v - i + dot(i, C.xx);\n\tvec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n\tvec4 x12 = x0.xyxy + C.xxzz;\n\tx12.xy -= i1;\n\ti = mod289(i);\n\tvec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));\n\tvec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n\tm = m*m*m*m ;\n\tvec3 x = 2.0 * fract(p * C.www) - 1.0;\n\tvec3 h = abs(x) - 0.5;\n\tvec3 ox = floor(x + 0.5);\n\tvec3 a0 = x - ox;\n\tm *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\tvec3 g;\n\tg.x  = a0.x * x0.x + h.x * x0.y;\n\tg.yz = a0.yz * x12.xz + h.yz * x12.yw;\n\treturn 130.0 * dot(m, g);\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | HSV2RGB https://github.com/hughsk/glsl-hsv2rgb\n// | No license found. \n// └────────────────────────────────────────────────────────────────────┘\nvec3 hsv2rgb( vec3 c ) {\n\tvec4 K = vec4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );\n\tvec3 p = abs( fract( c.xxx + K.xyz ) * 6.0 - K.www );\n\treturn c.z * mix( K.xxx, clamp( p - K.xxx, 0.0, 1.0 ), c.y );\n}\n\n// ┌────────────────────────────────────────────────────────────────────┐\n// | Our ♥ vertex shader\n// └────────────────────────────────────────────────────────────────────┘\nvoid main() {\n\tvec3 interpolate;\n\n\t// vertex colors\n\tif( ids < rings / 2.0 ) vColor.rgb = hsv2rgb( vec3( lightStep + ids / rings / 2.0 , 0.9, 0.7 ) );\n\telse vColor.rgb = hsv2rgb( vec3( lightStep + ( rings - ids ) / rings / 2.0 , 0.9, 0.7 ) );\n\tvColor.a = color.a;\n\n\t// rings\n\tif( ids < rings * 0.33 ) interpolate = pos0[ int( iids ) ] + ( pos1[ int( iids ) ] - pos0[ int( iids ) ] ) * ids / (rings * 0.33);\n\telse if( ids >= rings * 0.33 && ids < rings * 0.66 ) interpolate = pos1[ int( iids ) ] + ( pos2[ int( iids ) ] - pos1[ int( iids ) ] ) * (ids - (rings * 0.33)) / (rings * 0.33);\n\telse interpolate = pos2[ int( iids ) ] + ( pos0[ int( iids ) ] - pos2[ int( iids ) ] ) * (ids - (rings * 0.66)) / (rings * 0.33);\n\n\t// ring positions\n\tvec3 translate = vec3( cos( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), sin( M_PI * 2.0 * ids / (rings - 1.0) ) * ( bigRadius ), 0.0 );\n\t\n\t// soil + air\n\ttranslate += translate * 0.3 * snoise( vec2( translate.x / 900.0 + air, translate.y / 900.0 ) ) * (soil);\n\tinterpolate *= 1.0 + snoise( vec2( translate.x / 600.0 + air, translate.y / 600.0 ) ) * ( soil - 0.25 * soil ) ;\n\t\n\t// water\n\tfloat waterDist = snoise( vec2( translate.x / waterPhase + waterStep, translate.y / waterPhase ) );\n\tinterpolate *= 1.0 + waterDist * waterIntensity * 0.4;\n\ttranslate += translate * 0.1 * waterDist * waterIntensity;\n\n\t//audio\n\tfloat count;\n\tif( ids < rings / 2.0 ) count = ids;\n\telse count = ( rings - ids );\n\tfloat val1 = audioData[ int( floor( audioSamples * ( count / ( rings / 2.0 ) ) ) ) ];\n\tfloat val2 = audioData[ int( floor( audioSamples * ( count / ( rings / 2.0 ) ) + 1.0 ) ) ];\n\tfloat ringsPerSection =  rings / 2.0 / audioSamples ;\n\tfloat smoothed = (( count - floor( count / ringsPerSection ) * ( ringsPerSection ) )) / ( ringsPerSection );\n\tfloat audioDef = ( val1 + ( val2 - val1 ) * smoothstep(0.0,1.0,smoothed) );\n\tinterpolate *= 1.0 + audioDef;\n\ttranslate -= translate * 0.1 * audioDef;\n\n\tvec3 fPos = translate + interpolate;\n\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( fPos, 1.0 );\n}";
 
 },{}],7:[function(require,module,exports){
 module.exports = require('./vendor/dat.gui')
