@@ -14,8 +14,8 @@ Should be ready on port 5000
 - [x] Add measurements ( air moisture, land moisture, temperature)
 - [x] Interpolation ring n to ring creates artifacts
 - [x] Responsive
-- [ ] Data input
-- [ ] Devices
+- [x] Data input
+- [x] Devices
 - [ ] Add rings and segments selector
 - [ ] Update on resize
 - [ ] Performance
@@ -24,11 +24,12 @@ Should be ready on port 5000
 - [ ] Substrate smoothing
 - [ ] Audio smoothing
 - [ ] Interpolation smoothstep
-- [ ] Color interopolation is awkward sometimes
+- [x] Color interopolation is awkward sometimes
 - [ ] Big cleanup
 - [x] Big rewrite
 - [ ] Add audio data to SVG exporter
 - [ ] Add text and metrics
+- [ ] Browsers
 
 ### PARAMS
 

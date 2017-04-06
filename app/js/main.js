@@ -5,6 +5,7 @@ var Work = require('webworkify');
 var Ring = require('./views/ring');
 var Data = require('./views/data');
 
+
 var App = function() {
 	var _this = this;
 	
@@ -29,6 +30,11 @@ var App = function() {
 	else if( params.bigRadius >= 200 && params.bigRadius < 400 ) params.rings = 512;
 	else if( params.bigRadius >= 400 && params.bigRadius < 800 ) params.rings = 1024;
 	else params.rings = 2048;
+
+	if( params.bigRadius < 50 ) params.segments = 8;
+	else if( params.bigRadius >= 50 && params.bigRadius < 100 ) params.segments = 16;
+	else if( params.bigRadius >= 100 && params.bigRadius < 400 ) params.segments = 64;
+	else params.segments = 128;
 
 	this.data = new Data( this, params );
 	this.ring = new Ring( this );
@@ -84,16 +90,7 @@ App.prototype.onResize = function(e) {
 }
 
 App.prototype.onResizeEnd = function(e) {
-	// var params = {};
-	// this.data.bigRadius = Math.min( this.containerEl.offsetWidth, this.containerEl.offsetHeight ) / 4.8;
-	// this.data.rings = 64 * 2;
-	// if( Math.abs( this.data.bigRadius - 128 ) < Math.abs( this.data.bigRadius - 256 ) ) this.data.rings = 128 * 2;
-	// else if( Math.abs( this.data.bigRadius - 256 ) < Math.abs( this.data.bigRadius - 512 ) ) this.data.rings = 256 * 2;
-	// else if( Math.abs( this.data.bigRadius - 512 ) < Math.abs( this.data.bigRadius - 1024 ) ) this.data.rings = 512 * 2;
-	// else if( Math.abs( this.data.bigRadius - 1024 ) < Math.abs( this.data.bigRadius - 2048 ) ) this.data.rings = 1024 * 2;
-	// else this.data.rings = 2048 * 2;
-
-	// this.ring.onResizeEnd();
+	
 
 }
 

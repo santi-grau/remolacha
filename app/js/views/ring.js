@@ -1,6 +1,15 @@
 var lineVs = require('./../../shaders/lineVs.glsl');
 var lineFs = require('./../../shaders/lineFs.glsl');
 
+// console.log(lineVs)
+
+// [segmentsNum]	
+
+String.prototype.replaceAll = function(search, replacement){
+	var target = this;
+	return target.replace(new RegExp(search,'g'),replacement);
+}
+
 var Ring = function( parent ){
 	this.parent = parent;
 
@@ -10,6 +19,12 @@ var Ring = function( parent ){
 	geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( attributes.ids ), 1 ) );
 	geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( attributes.iids ), 1 ) );
 	geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( attributes.color ), 4 ) );
+
+
+	// var lineVs = lineVs.replace(/[segmentsNum]/i, '67');
+
+	// lineVs = lineVs.replaceAll( '[segmentsNum]', ' ' + ( this.parent.data.segments + 3 ) + ' ' )
+	// console.log(lineVs)
 
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
@@ -30,7 +45,7 @@ var Ring = function( parent ){
 			audioSamples : { value : 0 }
 		},
 		transparent : true,
-		vertexShader: lineVs,
+		vertexShader: lineVs.replaceAll( 'segmentsNum', ' ' + ( this.parent.data.segments + 3 ) + ' ' ),
 		fragmentShader: lineFs
 	} );
 

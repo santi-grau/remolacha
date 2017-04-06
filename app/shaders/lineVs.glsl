@@ -5,9 +5,9 @@ attribute float ids;
 attribute float iids;
 
 uniform float bigRadius;
-uniform vec3 pos0[201];
-uniform vec3 pos1[201];
-uniform vec3 pos2[201];
+uniform vec3 pos0[segmentsNum];
+uniform vec3 pos1[segmentsNum];
+uniform vec3 pos2[segmentsNum];
 uniform float temperature;
 uniform float soil;
 uniform float air;

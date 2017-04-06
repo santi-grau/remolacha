@@ -138,7 +138,7 @@ var Data = function( parent, params ){
 	this.f1.add( this.gui, 'playPauseAudio');
 	this.f1.add( this.gui, 'export');
 
-	this.f1.open();
+	this.f1.close();
 
 	var engine = Matter.Engine.create();
 	engine.world.gravity.y = 0;
