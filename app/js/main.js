@@ -36,6 +36,9 @@ var App = function() {
 	else if( params.bigRadius >= 100 && params.bigRadius < 400 ) params.segments = 64;
 	else params.segments = 128;
 
+	var isiPad = navigator.userAgent.match(/iPad/i) != null;
+	if(isiPad) params.segments = 32;
+
 	this.data = new Data( this, params );
 	this.ring = new Ring( this );
 	

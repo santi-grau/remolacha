@@ -44,7 +44,7 @@ app.use('/*.css', function(req, res){
 });
 
 app.use(cors());
-app.use(bodyParser.json());
+var jsonParser = bodyParser.json();
 
 app.use(express.static(__dirname + '/app'));
 // ┌────────────────────────────────────────────────────────────────────┐
@@ -59,8 +59,8 @@ app.get('/exporter', function(req, res){
 	res.render( 'main', {title: pckg.name});
 });
 
-app.post('/api', function (req, res, next) {
-	wss.clients.forEach(function each(client) {
+app.post('/api', jsonParser, function (req, res, next) {
+	wss.clients.forEach(function each(client) {	
 		client.send(JSON.stringify(req.body));
 	});
 	res.json('ok');

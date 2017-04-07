@@ -17,6 +17,7 @@ Should be ready on port 5000
 - [x] Data input
 - [x] Devices
 - [ ] Add rings and segments selector
+- [ ] Store values on file
 - [ ] Update on resize
 - [ ] Performance
 - [x] Replace matter for something more lightweight and performant
