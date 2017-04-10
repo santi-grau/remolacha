@@ -16,7 +16,7 @@ uniform float waterPhase;
 uniform float waterIntensity;
 uniform float lightStep;
 uniform float substrate;
-uniform float audioData[16];
+uniform float audioData[4];
 uniform float rings;
 uniform float audioSamples;
 

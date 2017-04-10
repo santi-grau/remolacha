@@ -16,18 +16,18 @@ Should be ready on port 5000
 - [x] Responsive
 - [x] Data input
 - [x] Devices
+- [x] Color interopolation is awkward sometimes
+- [x] Replace matter for something more lightweight and performant
+- [x] Audio
+- [x] Big rewrite
 - [ ] Add rings and segments selector
 - [ ] Store values on file
 - [ ] Update on resize
 - [ ] Performance
-- [x] Replace matter for something more lightweight and performant
-- [x] Audio
 - [ ] Substrate smoothing
 - [ ] Audio smoothing
 - [ ] Interpolation smoothstep
-- [x] Color interopolation is awkward sometimes
 - [ ] Big cleanup
-- [x] Big rewrite
 - [ ] Add audio data to SVG exporter
 - [ ] Add text and metrics
 - [ ] Browsers

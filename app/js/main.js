@@ -48,7 +48,11 @@ var App = function() {
 	this.scene = new THREE.Scene();
 	this.camera = new THREE.OrthographicCamera( );
 
-	this.scene.add( this.ring.mesh );
+
+	this.container = new THREE.Object3D();
+	this.container.add( this.ring.mesh );
+	this.scene.add( this.container );
+	
 
 	window.onresize = this.onResize.bind( this );
 
@@ -90,6 +94,8 @@ App.prototype.onResize = function(e) {
 	this.camera.updateProjectionMatrix();
 	clearTimeout( this.resizeStart );
 	this.resizeStart = setTimeout( this.onResizeEnd.bind(this), 400 );
+
+	this.container.position.x = this.containerEl.offsetWidth / 6;
 }
 
 App.prototype.onResizeEnd = function(e) {
