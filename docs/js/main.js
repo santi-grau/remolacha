@@ -23,7 +23,7 @@ var App = function() {
 
 	var params = {};
 
-	params.bigRadius = Math.min( this.containerEl.offsetWidth, this.containerEl.offsetHeight ) / 4.8;
+	params.bigRadius = Math.min( this.containerEl.offsetWidth, this.containerEl.offsetHeight ) / 4.2;
 	
 	if( params.bigRadius < 50 ) params.rings = 64;
 	else if( params.bigRadius >= 50 && params.bigRadius < 100 ) params.rings = 128;
@@ -54,7 +54,7 @@ var App = function() {
 	this.container.add( this.ring.mesh );
 	this.scene.add( this.container );
 	
-
+	this.firstResize = true;
 	window.onresize = this.onResize.bind( this );
 
 	this.onResize(); 
@@ -94,14 +94,19 @@ App.prototype.onResize = function(e) {
 	this.camera.position.z = 1;
 	this.camera.updateProjectionMatrix();
 	clearTimeout( this.resizeStart );
-	this.resizeStart = setTimeout( this.onResizeEnd.bind(this), 400 );
-
+	if( !this.firstResize ) this.resizeStart = setTimeout( this.onResizeEnd.bind(this), 400 );
+	this.firstResize = false;
 	this.container.position.x = this.containerEl.offsetWidth / 6;
 }
 
 App.prototype.onResizeEnd = function(e) {
-	
-
+	// this.ring.onResizeEnd();
+	// for( var i = 0 ; i < this.scene.children.length ; i++ ){
+	// 	this.scene.remove( this.scene.children[i] );
+	// }
+	// this.container = new THREE.Object3D();
+	// this.container.add( this.ring.mesh );
+	// this.scene.add( this.container );
 }
 
 App.prototype.step = function( time ) {
@@ -701,10 +706,6 @@ module.exports = Export;
 var lineVs = require('./../../shaders/lineVs.glsl');
 var lineFs = require('./../../shaders/lineFs.glsl');
 
-// console.log(lineVs)
-
-// [segmentsNum]	
-
 String.prototype.replaceAll = function(search, replacement){
 	var target = this;
 	return target.replace(new RegExp(search,'g'),replacement);
@@ -719,12 +720,6 @@ var Ring = function( parent ){
 	geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( attributes.ids ), 1 ) );
 	geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( attributes.iids ), 1 ) );
 	geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( attributes.color ), 4 ) );
-
-
-	// var lineVs = lineVs.replace(/[segmentsNum]/i, '67');
-
-	// lineVs = lineVs.replaceAll( '[segmentsNum]', ' ' + ( this.parent.data.segments + 3 ) + ' ' )
-	// console.log(lineVs)
 
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
@@ -773,13 +768,17 @@ Ring.prototype.getAttributes = function(){
 }
 
 Ring.prototype.onResizeEnd = function(){
-	var attributes = this.getAttributes();
-	
-	// var position = this.mesh.geometry.getAttribute('position');
-	// this.mesh.geometry.set( 'position', new THREE.BufferAttribute( new Float32Array( attributes.position ), 3 ) );
-	// this.mesh.geometry.set( 'ids', new THREE.BufferAttribute( new Float32Array( attributes.ids ), 1 ) );
-	// this.mesh.geometry.set( 'iids', new THREE.BufferAttribute( new Float32Array( attributes.iids ), 1 ) );
-	// this.mesh.geometry.set( 'color', new THREE.BufferAttribute( new Float32Array( attributes.color ), 4 ) );
+	// var attributes = this.getAttributes();
+
+	// this.mesh.geometry.removeAttribute( 'position' );
+	// this.mesh.geometry.removeAttribute( 'ids' );
+	// this.mesh.geometry.removeAttribute( 'iids' );
+	// this.mesh.geometry.removeAttribute( 'color' );
+
+	// this.mesh.geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( attributes.position ), 3 ) );
+	// this.mesh.geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( attributes.ids ), 1 ) );
+	// this.mesh.geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( attributes.iids ), 1 ) );
+	// this.mesh.geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( attributes.color ), 4 ) );
 
 	// this.mesh.geometry.attributes.position.needsUpdate = true;
 	// this.mesh.geometry.attributes.ids.needsUpdate = true;

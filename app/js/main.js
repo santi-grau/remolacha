@@ -22,7 +22,7 @@ var App = function() {
 
 	var params = {};
 
-	params.bigRadius = Math.min( this.containerEl.offsetWidth, this.containerEl.offsetHeight ) / 4.8;
+	params.bigRadius = Math.min( this.containerEl.offsetWidth, this.containerEl.offsetHeight ) / 4.2;
 	
 	if( params.bigRadius < 50 ) params.rings = 64;
 	else if( params.bigRadius >= 50 && params.bigRadius < 100 ) params.rings = 128;
@@ -53,7 +53,7 @@ var App = function() {
 	this.container.add( this.ring.mesh );
 	this.scene.add( this.container );
 	
-
+	this.firstResize = true;
 	window.onresize = this.onResize.bind( this );
 
 	this.onResize(); 
@@ -93,14 +93,19 @@ App.prototype.onResize = function(e) {
 	this.camera.position.z = 1;
 	this.camera.updateProjectionMatrix();
 	clearTimeout( this.resizeStart );
-	this.resizeStart = setTimeout( this.onResizeEnd.bind(this), 400 );
-
+	if( !this.firstResize ) this.resizeStart = setTimeout( this.onResizeEnd.bind(this), 400 );
+	this.firstResize = false;
 	this.container.position.x = this.containerEl.offsetWidth / 6;
 }
 
 App.prototype.onResizeEnd = function(e) {
-	
-
+	// this.ring.onResizeEnd();
+	// for( var i = 0 ; i < this.scene.children.length ; i++ ){
+	// 	this.scene.remove( this.scene.children[i] );
+	// }
+	// this.container = new THREE.Object3D();
+	// this.container.add( this.ring.mesh );
+	// this.scene.add( this.container );
 }
 
 App.prototype.step = function( time ) {

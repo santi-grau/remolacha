@@ -21,9 +21,10 @@ Should be ready on port 5000
 - [x] Audio
 - [x] Big rewrite
 - [x] Add text and metrics
+- [ ] Browsers
 - [ ] Add rings and segments selector
-- [ ] Store values on file
 - [ ] Update on resize
+- [ ] Store values on file
 - [ ] Processing tool
 - [ ] Performance
 - [ ] Substrate smoothing
@@ -31,8 +32,7 @@ Should be ready on port 5000
 - [ ] Interpolation smoothstep
 - [ ] Big cleanup
 - [ ] Add audio data to SVG exporter
-- [ ] Browsers
-- [ ] Hacklab -> HackLab
+- [x] Hacklab -> HackLab
 
 ### PARAMS
 

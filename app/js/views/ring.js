@@ -1,10 +1,6 @@
 var lineVs = require('./../../shaders/lineVs.glsl');
 var lineFs = require('./../../shaders/lineFs.glsl');
 
-// console.log(lineVs)
-
-// [segmentsNum]	
-
 String.prototype.replaceAll = function(search, replacement){
 	var target = this;
 	return target.replace(new RegExp(search,'g'),replacement);
@@ -19,12 +15,6 @@ var Ring = function( parent ){
 	geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( attributes.ids ), 1 ) );
 	geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( attributes.iids ), 1 ) );
 	geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( attributes.color ), 4 ) );
-
-
-	// var lineVs = lineVs.replace(/[segmentsNum]/i, '67');
-
-	// lineVs = lineVs.replaceAll( '[segmentsNum]', ' ' + ( this.parent.data.segments + 3 ) + ' ' )
-	// console.log(lineVs)
 
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
@@ -73,13 +63,17 @@ Ring.prototype.getAttributes = function(){
 }
 
 Ring.prototype.onResizeEnd = function(){
-	var attributes = this.getAttributes();
-	
-	// var position = this.mesh.geometry.getAttribute('position');
-	// this.mesh.geometry.set( 'position', new THREE.BufferAttribute( new Float32Array( attributes.position ), 3 ) );
-	// this.mesh.geometry.set( 'ids', new THREE.BufferAttribute( new Float32Array( attributes.ids ), 1 ) );
-	// this.mesh.geometry.set( 'iids', new THREE.BufferAttribute( new Float32Array( attributes.iids ), 1 ) );
-	// this.mesh.geometry.set( 'color', new THREE.BufferAttribute( new Float32Array( attributes.color ), 4 ) );
+	// var attributes = this.getAttributes();
+
+	// this.mesh.geometry.removeAttribute( 'position' );
+	// this.mesh.geometry.removeAttribute( 'ids' );
+	// this.mesh.geometry.removeAttribute( 'iids' );
+	// this.mesh.geometry.removeAttribute( 'color' );
+
+	// this.mesh.geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( attributes.position ), 3 ) );
+	// this.mesh.geometry.addAttribute( 'ids', new THREE.BufferAttribute( new Float32Array( attributes.ids ), 1 ) );
+	// this.mesh.geometry.addAttribute( 'iids', new THREE.BufferAttribute( new Float32Array( attributes.iids ), 1 ) );
+	// this.mesh.geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array( attributes.color ), 4 ) );
 
 	// this.mesh.geometry.attributes.position.needsUpdate = true;
 	// this.mesh.geometry.attributes.ids.needsUpdate = true;
