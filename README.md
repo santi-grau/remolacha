@@ -21,18 +21,19 @@ Should be ready on port 5000
 - [x] Audio
 - [x] Big rewrite
 - [x] Add text and metrics
+- [x] Hacklab -> HackLab
+- [x] Performance
 - [ ] Browsers
 - [ ] Add rings and segments selector
 - [ ] Update on resize
+- [ ] AWS
 - [ ] Store values on file
-- [ ] Processing tool
-- [ ] Performance
 - [ ] Substrate smoothing
 - [ ] Audio smoothing
 - [ ] Interpolation smoothstep
 - [ ] Big cleanup
+- [ ] Processing tool
 - [ ] Add audio data to SVG exporter
-- [x] Hacklab -> HackLab
 
 ### PARAMS
 

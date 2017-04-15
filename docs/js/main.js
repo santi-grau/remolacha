@@ -32,13 +32,15 @@ var App = function() {
 	else if( params.bigRadius >= 400 && params.bigRadius < 800 ) params.rings = 1024;
 	else params.rings = 2048;
 
-	if( params.bigRadius < 50 ) params.segments = 8;
-	else if( params.bigRadius >= 50 && params.bigRadius < 100 ) params.segments = 16;
+	if( params.bigRadius < 50 ) params.segments = 16;
+	else if( params.bigRadius >= 50 && params.bigRadius < 100 ) params.segments = 32;
 	else if( params.bigRadius >= 100 && params.bigRadius < 400 ) params.segments = 64;
 	else params.segments = 128;
 
-	var isiPad = navigator.userAgent.match(/iPad/i) != null;
-	if(isiPad) params.segments = 32;
+	this.isiPad = navigator.userAgent.match(/iPad/i) != null;
+	if(this.isiPad) params.segments = 32;
+
+	this.isiPhone = navigator.userAgent.match(/iPhone/i) != null;
 
 	this.data = new Data( this, params );
 	this.ring = new Ring( this );
@@ -97,6 +99,18 @@ App.prototype.onResize = function(e) {
 	if( !this.firstResize ) this.resizeStart = setTimeout( this.onResizeEnd.bind(this), 400 );
 	this.firstResize = false;
 	this.container.position.x = this.containerEl.offsetWidth / 6;
+	if( this.containerEl.offsetWidth < this.containerEl.offsetHeight ){
+		if( this.containerEl.offsetWidth <= 768 ){
+			this.container.position.x = 0;
+			this.container.position.y = this.containerEl.offsetHeight / 8;
+		}
+		if( this.isiPhone  ){
+			this.container.position.y = this.containerEl.offsetHeight / 5;
+		}
+	} 
+	if( this.isiPhone && this.containerEl.offsetWidth > this.containerEl.offsetHeight ){
+		this.container.position.x = this.containerEl.offsetWidth / 4;
+	}
 }
 
 App.prototype.onResizeEnd = function(e) {
@@ -300,7 +314,7 @@ var Data = function( parent, params ){
 	this.f1.add( this.gui, 'playPauseAudio');
 	this.f1.add( this.gui, 'export');
 
-	this.f1.open();
+	this.f1.close();
 
 	var engine = Matter.Engine.create();
 	engine.world.gravity.y = 0;

@@ -10,6 +10,8 @@
 	font-weight normal
 	font-style normal
 
+.dg.ac
+	display none
 
 html
 	height 100%
@@ -96,6 +98,32 @@ body
 
 
 
+@media only screen and (max-width: 1024px) and (min-width: 768px)
+	body
+		#main
+			#parentbox
+				width 100%
+				margin-left 0px
+				#copy
+					vertical-align bottom
+					margin-bottom 40px
+					position relative
+					left 50%
+					margin-left -330px
+					#title
+						position absolute
+					#measures
+						width 300px
+						position relative 
+						left 350px
+						.measure
+							.bar
+								height 6px
+					#footer
+						padding-top 10px
+						position relative 
+						left 350px
+
 
 @media only screen and (min-width: 1440px)
 	body
@@ -103,3 +131,74 @@ body
 			width 1440px
 			left 50%
 			margin-left -720px
+
+
+/* ----------- Phone ----------- */
+
+/* Portrait */
+@media only screen and (min-device-width: 320px) and (max-device-width: 736px) and (-webkit-min-device-pixel-ratio: 2) and (orientation: portrait)
+	body
+		#main
+			#parentbox
+				width 100%
+				margin-left 0px
+				#copy
+					width 95%
+					vertical-align bottom
+					margin-bottom 10px
+					position relative
+					#title
+						transform scale(0.8)
+						transform-origin 0 100%
+						margin-left 5%
+						margin-bottom 0px
+						height 150px
+					#measures
+						width 95%
+						left 5%
+						position relative 
+						.measure
+							font-size 8px
+							border-top solid 1px #777777
+							padding-top 1px
+							padding-bottom 2px
+							.bar
+								margin-top 3px
+								height 6px
+					#footer
+						width 95%
+						left 5%
+						padding-top 10px
+						position relative 
+
+/* Landscape */
+@media only screen and (min-device-width: 320px) and (max-device-width: 736px) and (-webkit-min-device-pixel-ratio: 2) and (orientation: landscape)
+	body
+		#main
+			#parentbox
+				width 100%
+				margin-left 0px
+				#copy
+					margin-left 5%
+					width 40%
+					position relative
+					margin-top -50px
+					#title
+						transform scale(0.6)
+						transform-origin 0 100%
+						margin-bottom 10px
+						height 150px
+					#measures
+						position relative 
+						.measure
+							font-size 8px
+							border-top solid 1px #777777
+							padding-top 1px
+							padding-bottom 2px
+							.bar
+								margin-top 3px
+								height 6px
+					#footer
+						padding-top 10px
+						position relative 
+
