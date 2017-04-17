@@ -12,14 +12,10 @@ var stringify = require('stringify');
 var figlet = require('figlet');
 var express = require("express");
 var stylus = require('stylus');
-var bodyParser = require('body-parser');
 var nib = require('nib');
 var fs = require('fs');
 var pckg = require('./package.json');
 var jade = require('jade');
-var http = require("http");
-var WebSocketServer = require('ws').Server;
-var cors = require('cors');
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Initialize vars + constants
@@ -42,10 +38,8 @@ app.use('/*.css', function(req, res){
 	res.set('Content-Type', 'text/css').send( stylus.render( fs.readFileSync(__dirname + '/app/css/' + file + '.styl', 'utf-8') )); 
 });
 
-app.use(cors());
-var jsonParser = bodyParser.json();
-
 app.use(express.static(__dirname + '/app'));
+
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Routes
 // └────────────────────────────────────────────────────────────────────┘
@@ -58,21 +52,11 @@ app.get('/exporter', function(req, res){
 	res.render( 'main', {title: pckg.name});
 });
 
-app.post('/api', jsonParser, function (req, res, next) {
-	wss.clients.forEach(function each(client) {	
-		client.send(JSON.stringify(req.body));
-	});
-	res.json('ok');
-});
-
 // ┌────────────────────────────────────────────────────────────────────┐
 // | Init!!
 // └────────────────────────────────────────────────────────────────────┘
 
-var server = http.createServer(app);
-var wss = new WebSocketServer({ server });
-
-server.listen(port);
+app.listen(port);
 
 figlet.fonts(function(err, fonts) {
 	var font = fonts[Math.floor(Math.random() * fonts.length)];
@@ -83,5 +67,3 @@ figlet.fonts(function(err, fonts) {
 		console.log('└─────> Listening on port: ' + port);
 	});
 });
-
-
