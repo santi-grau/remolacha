@@ -9,25 +9,10 @@ Should be ready on port 5000
 
 ### TODO
 
-- [x] Add new order of parameters
-- [x] Sync vs and exporter
-- [x] Add measurements ( air moisture, land moisture, temperature)
-- [x] Interpolation ring n to ring creates artifacts
-- [x] Responsive
-- [x] Data input
-- [x] Devices
-- [x] Color interopolation is awkward sometimes
-- [x] Replace matter for something more lightweight and performant
-- [x] Audio
-- [x] Big rewrite
-- [x] Add text and metrics
-- [x] Hacklab -> HackLab
-- [x] Performance
-- [ ] Browsers
-- [ ] Add rings and segments selector
-- [ ] Update on resize
 - [ ] AWS
+- [ ] Update on resize
 - [ ] Store values on file
+- [ ] Add rings and segments selector
 - [ ] Substrate smoothing
 - [ ] Audio smoothing
 - [ ] Interpolation smoothstep

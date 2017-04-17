@@ -26,7 +26,6 @@ var cors = require('cors');
 // └────────────────────────────────────────────────────────────────────┘
 var app = express();
 var port = Number( process.env.PORT || 5000 );
-var wsport = Number( process.env.WSPORT || 5001 );
 
 // ┌────────────────────────────────────────────────────────────────────┐
 // | App setup
