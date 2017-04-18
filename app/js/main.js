@@ -5,6 +5,12 @@ var Work = require('webworkify');
 var Ring = require('./views/ring');
 var Data = require('./views/data');
 
+var xmlHttp = new XMLHttpRequest();
+xmlHttp.open( "GET", 'http://localhost:5000/data', false );
+xmlHttp.send( null );
+var dataJSON = JSON.parse( xmlHttp.responseText );
+
+console.log(dataJSON.air)
 
 var App = function() {
 	var _this = this;

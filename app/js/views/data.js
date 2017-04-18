@@ -10,8 +10,6 @@ var audioSamples = 16;
 var SoundCloudAudioSource = function(audioElement, audioFile) {
 	this.isPlaying = false;
 	this.player = document.getElementById(audioElement);
-
-
 	
 	var self = this;
 	var analyser;
@@ -79,6 +77,11 @@ function HSVtoRGB(h, s, v) {
 
 
 
+var lightAudio = new Audio('media/light.mp3');
+var waterAudio = new Audio('media/water.mp3');
+var substrateAudio = new Audio('media/substrate.mp3');
+
+
 var Data = function( parent, params ){
 	var _this = this;
 	this.parent = parent;
@@ -127,7 +130,7 @@ var Data = function( parent, params ){
 	this.sliders = {};
 	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
 
-	this.audioSource = new SoundCloudAudioSource('player','media/track2.mp3');
+	this.audioSource = new SoundCloudAudioSource('player','media/audio1.mp3');
 	
 	this.stop1 = document.getElementById('stop1');
 	this.stop2 = document.getElementById('stop2');
@@ -228,19 +231,25 @@ Data.prototype.update = function( data ){
 		if( key == 'temperature' ) this.gui.temperature = this.temperature = param[key];
 		if( key == 'air' ) this.gui.air = this.air = param[key];
 		if( key == 'soil' ) this.gui.soil = this.soil = param[key];
-		if( key == 'water'  ) this.gui.water = this.water = param[key];
-		if( key == 'light') this.gui.light = this.light = param[key];
-		if( key == 'substrate'  ) this.addSubstrate();
+		if( key == 'water'  ){
+			this.gui.water = this.water = param[key];
+			if( param[key] ) waterAudio.play();
+		}
+		if( key == 'light'){
+			this.gui.light = this.light = param[key];
+			if( param[key] ) lightAudio.play();
+		}
+		if( key == 'substrate'  ){
+			if( param[key] ) this.addSubstrate();
+			else this.removeSubstrate();
+		}
 		if( key == 'audio'  ) {
 			if( param[key] ){
-				_this.audioSource.isPlaying = false;
-				_this.audioSource.stopPlayStream();
-				_this.audioSource.isPlaying = true;
-				
+				// _this.audioSource.playStream();
+				this.audio = true;
 			} else {
-				_this.audioSource.isPlaying = true;
-				_this.audioSource.stopPlayStream();
-				_this.audioSource.isPlaying = false;
+				// _this.audioSource.stopStream();
+				this.audio = false;
 			}
 		}
 	}
@@ -248,6 +257,7 @@ Data.prototype.update = function( data ){
 
 Data.prototype.addSubstrate = function(){
 	var val;
+	substrateAudio.play();
 	if( this.substrate < 0.1 ) val = 0.25;
 	else if( this.substrate > 0 && this.substrate < 0.25 ) val = 0.5;
 	else if( this.substrate >= 0.25 && this.substrate < 0.5 ) val = 0.75;
@@ -255,7 +265,26 @@ Data.prototype.addSubstrate = function(){
 
 	this.substrateAnimate = true;
 
-	this.waterTimerTween = TweenMax.to(this, 1, { 
+	this.substrateTimerTween = TweenMax.to(this, 1, { 
+		substrate: val,
+		ease: Elastic.easeOut.config(1, 0.4),
+		onComplete : function(){
+			this.substrateAnimate = false;
+		}.bind(this)
+	} );
+}
+
+
+Data.prototype.removeSubstrate = function(){
+	var val;
+	if( this.substrate > 0.75 ) val = 0.75;
+	else if( this.substrate > 0.5 && this.substrate <= 0.75 ) val = 0.5;
+	else if( this.substrate > 0.25 && this.substrate <= 0.5 ) val = 0.25;
+	else val = 0;
+
+	this.substrateAnimate = true;
+
+	this.substrateTimerTween = TweenMax.to(this, 1, { 
 		substrate: val,
 		ease: Elastic.easeOut.config(1, 0.4),
 		onComplete : function(){
@@ -298,6 +327,7 @@ Data.prototype.audioSwitch = function( val ){
 				this.audioSource.isPlaying = !this.audioSource.isPlaying;
 				this.audioTimerIsOn = true;
 			}else{
+				this.audioSource.stopStream();
 				this.audioTimerIsOn = false;
 				
 			}

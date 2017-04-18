@@ -9,15 +9,19 @@ Should be ready on port 5000
 
 ### TODO
 
-- [ ] AWS
-- [ ] Update on resize
+- [x] AWS
+- [ ] Audios
 - [ ] Store values on file
+- [ ] Processing tool
+
+- [ ] Update on resize
 - [ ] Add rings and segments selector
+
 - [ ] Substrate smoothing
 - [ ] Audio smoothing
 - [ ] Interpolation smoothstep
 - [ ] Big cleanup
-- [ ] Processing tool
+
 - [ ] Add audio data to SVG exporter
 
 ### PARAMS

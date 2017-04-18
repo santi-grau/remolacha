@@ -48,6 +48,10 @@ app.get('/', function(req, res){
 	res.render( 'main', {title: pckg.name});
 });
 
+app.get('/data', function(req, res){
+	res.send( fs.readFileSync( './data.json', { encoding : 'utf8'  } ) );
+});
+
 app.get('/exporter', function(req, res){
 	res.render( 'main', {title: pckg.name});
 });
