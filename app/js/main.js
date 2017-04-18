@@ -6,7 +6,7 @@ var Ring = require('./views/ring');
 var Data = require('./views/data');
 
 var xmlHttp = new XMLHttpRequest();
-xmlHttp.open( "GET", 'http://localhost:5000/data', false );
+xmlHttp.open( "GET", 'http://54.93.229.125/', false );
 xmlHttp.send( null );
 var dataJSON = JSON.parse( xmlHttp.responseText );
 
