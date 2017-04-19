@@ -20,6 +20,7 @@ var SoundCloudAudioSource = function(audioElement, audioFile) {
 	analyser.maxDecibels = 0;
 
 	analyser.fftSize = audioSamples * 2;
+
 	var source = audioCtx.createMediaElementSource(this.player);
 	source.connect(analyser);
 	analyser.connect(audioCtx.destination);
@@ -31,7 +32,6 @@ var SoundCloudAudioSource = function(audioElement, audioFile) {
 	}; 
 	this.player.setAttribute('src', audioFile);
 	this.playStream = function(){ this.player.play(); }
-	
 	this.stopStream = function() { this.player.pause(); }
 
 };
@@ -87,6 +87,7 @@ var Data = function( parent, params ){
 	this.parent = parent;
 
 	// main params
+	this.audioOn = true;
 	this.bigRadius = params.bigRadius || 200;
 	this.extRadius = params.bigRadius || 200;
 	this.ringRadius = params.ringRadius || this.bigRadius / 3.2;
@@ -96,10 +97,10 @@ var Data = function( parent, params ){
 	this.pos0 = [];
 	this.pos1 = [];
 	this.pos2 = [];
-	this.temperature = Math.random();
-	this.soil = Math.random();
+	this.temperature = params.temperature || Math.random();
+	this.soil = params.soil || Math.random();
 	this.air = Math.random();
-	this.airInc = Math.random();
+	this.airInc = params.air || Math.random();
 	this.prevWater = false;
 	this.water = false;
 	this.waterStep = 0.5;
@@ -128,13 +129,15 @@ var Data = function( parent, params ){
 	this.generators = [];
 	this.audioSamples = audioSamples;
 	this.sliders = {};
+	this.activeAudioSource = null;
 	for( var i = 0 ; i < 3 ; i++ ) this.generators.push( new SimplexNoise( Math.random ) );
-
-	this.audioSource = new SoundCloudAudioSource('player','media/audio1.mp3');
 	
 	this.stop1 = document.getElementById('stop1');
 	this.stop2 = document.getElementById('stop2');
 	
+	this.audioSource1 = new SoundCloudAudioSource('player1','media/audio1.mp3');
+	this.audioSource2 = new SoundCloudAudioSource('player2','media/audio2.mp3');
+	this.audioSource3 = new SoundCloudAudioSource('player3','media/audio3.mp3');
 
 	var inners = document.getElementsByClassName('inner');
 	for( var i = 0 ; i < inners.length ; i++ ) this.sliders[inners[i].getAttribute('id')] = inners[i];
@@ -218,26 +221,31 @@ var Data = function( parent, params ){
 		Matter.Body.setStatic(this.fixed.bodies[i], true );
 	}
 
+	window.addEventListener("keypress", this.keyPress.bind(this));
+
 	Matter.World.add( engine.world, [ this.substrateParticle, this.substrateAnchor, this.stack, this.fixed ] );
 	Matter.Engine.run(engine);
 	// Matter.Render.run(render);
 
 }
 
+Data.prototype.keyPress = function( e ){
+	if(e.keyCode == 97) this.audioOn = !this.audioOn;
+}
 Data.prototype.update = function( data ){
 	var _this = this;
 	var param = JSON.parse(data);
 	for( key in param ){
 		if( key == 'temperature' ) this.gui.temperature = this.temperature = param[key];
-		if( key == 'air' ) this.gui.air = this.air = param[key];
+		if( key == 'air' ) this.gui.air = this.airInc = param[key];
 		if( key == 'soil' ) this.gui.soil = this.soil = param[key];
 		if( key == 'water'  ){
 			this.gui.water = this.water = param[key];
-			if( param[key] ) waterAudio.play();
+			if( param[key] && this.audioOn ) waterAudio.play();
 		}
 		if( key == 'light'){
 			this.gui.light = this.light = param[key];
-			if( param[key] ) lightAudio.play();
+			if( param[key] && this.audioOn ) lightAudio.play();
 		}
 		if( key == 'substrate'  ){
 			if( param[key] ) this.addSubstrate();
@@ -246,6 +254,7 @@ Data.prototype.update = function( data ){
 		if( key == 'audio'  ) {
 			if( param[key] ){
 				// _this.audioSource.playStream();
+				this.activeAudioSource = param[key];
 				this.audio = true;
 			} else {
 				// _this.audioSource.stopStream();
@@ -257,7 +266,7 @@ Data.prototype.update = function( data ){
 
 Data.prototype.addSubstrate = function(){
 	var val;
-	substrateAudio.play();
+	if(this.audioOn) substrateAudio.play();
 	if( this.substrate < 0.1 ) val = 0.25;
 	else if( this.substrate > 0 && this.substrate < 0.25 ) val = 0.5;
 	else if( this.substrate >= 0.25 && this.substrate < 0.5 ) val = 0.75;
@@ -316,20 +325,20 @@ Data.prototype.lightSwitch = function( val ){
 }
 
 Data.prototype.audioSwitch = function( val ){
-	if(!val) this.audioSource.stopStream();
-	if( val) this.audioSource.player.currentTime = 0;
+	if(!val) this['audioSource' + this.activeAudioSource].stopStream();
+	if( val) this['audioSource' + this.activeAudioSource].player.currentTime = 0;
 	this.audioSwitchTween = TweenMax.to(this, 1, { 
 		audioTimer: val,
 		ease: Power3.easeOut,
 		onComplete : function(){
 			if( val ) {
-				this.audioSource.playStream();
-				this.audioSource.isPlaying = !this.audioSource.isPlaying;
+				this['audioSource' + this.activeAudioSource].playStream();
+				this['audioSource' + this.activeAudioSource].isPlaying = !this['audioSource' + this.activeAudioSource].isPlaying;
 				this.audioTimerIsOn = true;
 			}else{
-				this.audioSource.stopStream();
+				this['audioSource' + this.activeAudioSource].stopStream();
 				this.audioTimerIsOn = false;
-				
+				this['audioSource' + this.activeAudioSource] = null;
 			}
 		}.bind(this)
 	} );
@@ -376,11 +385,11 @@ Data.prototype.step = function( time ){
 
 
 	// audio
-	this.audioSource.sampleAudioStream();
+	if( this.audio ) this['audioSource' + this.activeAudioSource].sampleAudioStream();
 	if( this.prevAudio !== this.audio && !this.prevAudio ) this.audioSwitch( 1 );
 	if( this.prevAudio !== this.audio && this.prevAudio ) this.audioSwitch( 0 );
 	if( this.audioTimerIsOn ) {
-		var audioPosition = this.audioSource.player.currentTime / this.audioSource.player.duration;
+		var audioPosition = this['audioSource' + this.activeAudioSource].player.currentTime / this['audioSource' + this.activeAudioSource].player.duration;
 		this.audioTimer = 1 - audioPosition;
 	}
 	this.prevAudio = this.audio;
@@ -390,7 +399,8 @@ Data.prototype.step = function( time ){
 	this.air += 0.0005 + 0.003 * this.airInc;
  	
 	for( var i = 0 ; i < audioSamples ; i++ ){
-		var fftCurr = dB(this.audioSource.streamData[i]);
+		if(this.audio) var fftCurr = dB(this['audioSource' + this.activeAudioSource].streamData[i]);
+		else fftCurr = 0;
 		fftSmooth[i] = audioSmoothing * fftSmooth[i] + ((1-audioSmoothing)*fftCurr);
 		if(fftSmooth[i] > maxVal ) maxVal = fftSmooth[i];
 		if(!firstMinDone || (fftSmooth[i] < minVal))  minVal = fftSmooth[i];

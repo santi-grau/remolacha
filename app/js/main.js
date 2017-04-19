@@ -9,7 +9,6 @@ var xmlHttp = new XMLHttpRequest();
 xmlHttp.open( "GET", 'http://54.93.229.125/', false );
 xmlHttp.send( null );
 var dataJSON = JSON.parse( xmlHttp.responseText );
-
 console.log(dataJSON.air)
 
 var App = function() {
@@ -30,6 +29,10 @@ var App = function() {
 
 	params.bigRadius = Math.min( this.containerEl.offsetWidth, this.containerEl.offsetHeight ) / 4.2;
 	
+	params.temperature = dataJSON.temperature;
+	params.soil = dataJSON.soil;
+	params.air = dataJSON.air;
+
 	if( params.bigRadius < 50 ) params.rings = 64;
 	else if( params.bigRadius >= 50 && params.bigRadius < 100 ) params.rings = 128;
 	else if( params.bigRadius >= 100 && params.bigRadius < 200 ) params.rings = 256;
