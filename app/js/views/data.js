@@ -33,7 +33,6 @@ var SoundCloudAudioSource = function(audioElement, audioFile) {
 	this.player.setAttribute('src', audioFile);
 	this.playStream = function(){ this.player.play(); }
 	this.stopStream = function() { this.player.pause(); }
-
 };
 
 var audioSmoothing = 0.5
@@ -190,19 +189,6 @@ var Data = function( parent, params ){
 	var engine = Matter.Engine.create();
 	engine.world.gravity.y = 0;
 
-	// var render = Matter.Render.create({
-	// 	element: document.getElementById('renderer'),
-	// 	engine: engine,
-	// 	options : {
-	// 		background : '#ffffff00',
-	// 		wireframeBackground : "#ffffff00",
-	// 		showCollisions : true,
-	// 		pixelRatio : 1,
-	// 		width : this.parent.containerEl.offsetWidth,
-	// 		height : this.parent.containerEl.offsetHeight
-	// 	}
-	// });
-
 	this.substrateParticle = Matter.Bodies.circle( this.parent.containerEl.offsetWidth / 2, this.parent.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
 	this.substrateAnchor = Matter.Bodies.circle( this.parent.containerEl.offsetWidth / 2, this.parent.containerEl.offsetHeight / 2 - 30, 3, { friction: 0, restitution: .1, density: 1, collisionFilter: {category: undefined}});
 	Matter.Body.setStatic(this.substrateAnchor, true );
@@ -225,8 +211,6 @@ var Data = function( parent, params ){
 
 	Matter.World.add( engine.world, [ this.substrateParticle, this.substrateAnchor, this.stack, this.fixed ] );
 	Matter.Engine.run(engine);
-	// Matter.Render.run(render);
-
 }
 
 Data.prototype.keyPress = function( e ){
@@ -241,23 +225,32 @@ Data.prototype.update = function( data ){
 		if( key == 'soil' ) this.gui.soil = this.soil = param[key];
 		if( key == 'water'  ){
 			this.gui.water = this.water = param[key];
-			if( param[key] && this.audioOn ) waterAudio.play();
+			if( this.waterTimerIsOn && param[key] ) this.waterSwitch(1);
+			if( param[key] && this.audioOn ){
+				// waterAudio.currentTime = 0;
+				waterAudio.play();
+			}
 		}
 		if( key == 'light'){
 			this.gui.light = this.light = param[key];
-			if( param[key] && this.audioOn ) lightAudio.play();
+			if( this.lightTimerIsOn && param[key] ) this.lightSwitch(1);
+			if( param[key] && this.audioOn ){
+				// lightAudio.currentTime = 0;
+				lightAudio.play();
+			}
 		}
 		if( key == 'substrate'  ){
 			if( param[key] ) this.addSubstrate();
 			else this.removeSubstrate();
 		}
 		if( key == 'audio'  ) {
+			if( this.activeAudioSource ) this['audioSource' + this.activeAudioSource].stopStream();
 			if( param[key] ){
-				// _this.audioSource.playStream();
 				this.activeAudioSource = param[key];
 				this.audio = true;
+				this['audioSource' + this.activeAudioSource].player.currentTime = 0;
+				this['audioSource' + this.activeAudioSource].playStream();
 			} else {
-				// _this.audioSource.stopStream();
 				this.audio = false;
 			}
 		}
@@ -325,8 +318,10 @@ Data.prototype.lightSwitch = function( val ){
 }
 
 Data.prototype.audioSwitch = function( val ){
-	if(!val) this['audioSource' + this.activeAudioSource].stopStream();
+
+	if( !val ) this['audioSource' + this.activeAudioSource].stopStream();
 	if( val) this['audioSource' + this.activeAudioSource].player.currentTime = 0;
+
 	this.audioSwitchTween = TweenMax.to(this, 1, { 
 		audioTimer: val,
 		ease: Power3.easeOut,
@@ -338,7 +333,7 @@ Data.prototype.audioSwitch = function( val ){
 			}else{
 				this['audioSource' + this.activeAudioSource].stopStream();
 				this.audioTimerIsOn = false;
-				this['audioSource' + this.activeAudioSource] = null;
+				// this['audioSource' + this.activeAudioSource] = null;
 			}
 		}.bind(this)
 	} );
@@ -383,12 +378,12 @@ Data.prototype.step = function( time ){
 	this.bigRadius = this.extRadius + this.extRadius * this.substrate;
 	this.ringRadius = this.intRadius + this.intRadius * this.substrate;
 
-
 	// audio
 	if( this.audio ) this['audioSource' + this.activeAudioSource].sampleAudioStream();
 	if( this.prevAudio !== this.audio && !this.prevAudio ) this.audioSwitch( 1 );
 	if( this.prevAudio !== this.audio && this.prevAudio ) this.audioSwitch( 0 );
 	if( this.audioTimerIsOn ) {
+	// if( this.audio ){
 		var audioPosition = this['audioSource' + this.activeAudioSource].player.currentTime / this['audioSource' + this.activeAudioSource].player.duration;
 		this.audioTimer = 1 - audioPosition;
 	}

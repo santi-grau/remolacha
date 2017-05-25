@@ -5,17 +5,28 @@ var Work = require('webworkify');
 var Ring = require('./views/ring');
 var Data = require('./views/data');
 
-var xmlHttp = new XMLHttpRequest();
-xmlHttp.open( "GET", 'http://54.93.229.125/', false );
-xmlHttp.send( null );
-var dataJSON = JSON.parse( xmlHttp.responseText );
-console.log(dataJSON.air)
+var app;
+var dataJSON;
+
+function reqListener () {
+ dataJSON = this.responseText;
+  app = new App()
+}
+
+
+var ip = '13.58.13.158:8080';
+
+var oReq = new XMLHttpRequest();
+oReq.addEventListener("load", reqListener);
+oReq.open("GET", "http://"+ip+"/");
+oReq.send();
+
 
 var App = function() {
 	var _this = this;
 	
-	var host = 'ws://54.93.229.125/';
-	// if( location.origin.indexOf( 'localhost' ) !== -1 ) host = 'ws://localhost:4000/';
+	var host = 'ws://'+ip+'/';
+	// if( location.origin.indexOf( 'localhost' ) !== -1 ) host = 'ws://localhost:8080';
 	// else host = location.origin.replace(/^http/, 'ws')
 	var ws = new WebSocket( host );
 
@@ -139,4 +150,3 @@ App.prototype.step = function( time ) {
 	this.renderer.render( this.scene, this.camera );
 };
 
-var app = new App();

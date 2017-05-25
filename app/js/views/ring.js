@@ -40,7 +40,6 @@ var Ring = function( parent ){
 	} );
 
 	this.mesh = new THREE.Line( geometry, material );
-	console.log( geometry)
 }
 
 Ring.prototype.getAttributes = function(){
